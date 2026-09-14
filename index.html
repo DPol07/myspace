@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MySpace.com - Captain Jack Sparrow - Savvy?</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Retro Navigation Bar -->
+  <header class="myspace-header">
+    <div class="header-inner">
+      <div class="logo-area">
+        <span class="myspace-logo">myspace<span class="skull-icon">☠️</span>.com</span>
+        <span class="tagline">| a place for pirates</span>
+      </div>
+      <div class="nav-links">
+        <a href="#home" onclick="alert('You are already at the epicenter of the Caribbean, mate!')">Home</a> |
+        <a href="#browse" onclick="alert('Browsing for treasure? Check the nearest rum barrel.')">Browse</a> |
+        <a href="#search" onclick="alert('Searching for the Black Pearl... Status: Complicated.')">Search</a> |
+        <a href="#invite" onclick="alert('Invite sent via carrier seagull.')">Invite Friends</a> |
+        <a href="#film" onclick="alert('Featured Film: Curse of the Black Pearl')">Film</a> |
+        <a href="#mail" onclick="alert('Message in a bottle delivered!')">Mail (3)</a> |
+        <a href="#blog" onclick="alert('Jack\'s Captain Log: Why is the rum gone?')">Blog</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Marquee Banner -->
+  <div class="marquee-container">
+    <marquee scrollamount="5" behavior="scroll" direction="left">
+      🏴‍☠️ ATTENTION: You are viewing the official profile of CAPTAIN Jack Sparrow! Mind the rum, mind the compass, and remember this as the day you ALMOST caught Captain Jack Sparrow! 🏴‍☠️
+    </marquee>
+  </div>
+
+  <!-- Main Profile Container -->
+  <main class="profile-container">
+
+    <!-- LEFT COLUMN -->
+    <aside class="left-column">
+
+      <!-- Profile Header / Name -->
+      <div class="profile-title-box">
+        <h1>CAPTAIN Jack Sparrow</h1>
+        <p class="headline-quote">"Not all treasure is silver and gold, mate... mostly it's rum."</p>
+      </div>
+
+      <!-- Main Photo & Status -->
+      <div class="profile-pic-container">
+        <div class="image-frame">
+          <img src="assets/jack_profile.webp" alt="Captain Jack Sparrow" class="profile-pic">
+          <div class="online-now">
+            <span class="blink-dot"></span> CAPTAIN IS ONLINE <span class="sub-status">(or at sea)</span>
+          </div>
+        </div>
+        <p class="profile-details-summary">
+          <strong>Mood:</strong> Savvy 🍸<br>
+          <strong>Status:</strong> It's complicated<br>
+          <strong>Location:</strong> The Caribbean (Uncharted)<br>
+          <strong>Occupation:</strong> Pirate / Captain / Professional Escapist
+        </p>
+      </div>
+
+      <!-- Contact Box Table -->
+      <div class="section-box contact-box">
+        <div class="box-header">
+          <h3>Contacting Captain Jack Sparrow</h3>
+        </div>
+        <div class="box-content contact-grid">
+          <button class="contact-btn" onclick="sendBottleMsg()">
+            <span class="icon">🍾</span> Send Message
+          </button>
+          <button class="contact-btn" onclick="addFriend()">
+            <span class="icon">⚔️</span> Add to Friends
+          </button>
+          <button class="contact-btn" onclick="addToFavs()">
+            <span class="icon">⭐</span> Add to Favorites
+          </button>
+          <button class="contact-btn" onclick="bottlePigeon()">
+            <span class="icon">📜</span> Send Parley Request
+          </button>
+          <button class="contact-btn" onclick="blockUser()">
+            <span class="icon">🚫</span> Block User (Good Luck)
+          </button>
+          <button class="contact-btn" onclick="rankUser()">
+            <span class="icon">🏴‍☠️</span> Rate Profile (10/10 Rum)
+          </button>
+        </div>
+      </div>
+
+      <!-- Jack's Interests -->
+      <div class="section-box interests-box">
+        <div class="box-header">
+          <h3>Jack's Interests</h3>
+        </div>
+        <div class="box-content">
+          <table class="interests-table">
+            <tr>
+              <td class="label">General:</td>
+              <td class="value">Rum, sailing, treasure, the Black Pearl, escaping the Navy, dramatic entrances, making questionable plans, and rum again.</td>
+            </tr>
+            <tr>
+              <td class="label">Music:</td>
+              <td class="value">Sea shanties, dramatic orchestral strings, Hans Zimmer, the rhythmic popping of rum corks, cannons firing in B-flat.</td>
+            </tr>
+            <tr>
+              <td class="label">Movies:</td>
+              <td class="value">Anything featuring stolen ships, sea monsters, or miraculous escapes involving two sea turtles.</td>
+            </tr>
+            <tr>
+              <td class="label">Heroes:</td>
+              <td class="value">Myself (Captain Jack Sparrow). Also whoever invented rum.</td>
+            </tr>
+            <tr>
+              <td class="label">Dislikes:</td>
+              <td class="value">Empty rum bottles, gallows, dry land, Hector Barbossa touching my steering wheel, the Royal Navy.</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Top 8 Crew & Friends -->
+      <div class="section-box friends-box">
+        <div class="box-header">
+          <h3>Captain Jack's Top Friends (Crew & Nuisances)</h3>
+          <span class="friend-count">Jack has <span class="gold-text">8</span> friends in his pirate circle.</span>
+        </div>
+        <div class="box-content friends-grid">
+
+          <div class="friend-card">
+            <a href="#barbossa" class="friend-name">Hector Barbossa</a>
+            <div class="friend-img-placeholder barbossa-img">🏴‍☠️</div>
+            <p class="friend-role">Rival / former captain / professional nuisance</p>
+          </div>
+
+          <div class="friend-card">
+            <a href="#will" class="friend-name">Will Turner</a>
+            <div class="friend-img-placeholder will-img">🗡️</div>
+            <p class="friend-role">Blacksmith / occasional responsible adult</p>
+          </div>
+
+          <div class="friend-card">
+            <a href="#elizabeth" class="friend-name">Elizabeth Swann</a>
+            <div class="friend-img-placeholder elizabeth-img">👑</div>
+            <p class="friend-role">Complicated (and handcuffed me to a ship once)</p>
+          </div>
+
+          <div class="friend-card">
+            <a href="#gibbs" class="friend-name">Joshamee Gibbs</a>
+            <div class="friend-img-placeholder gibbs-img">⚓</div>
+            <p class="friend-role">Trusted crew / master storyteller</p>
+          </div>
+
+          <div class="friend-card">
+            <a href="#davy" class="friend-name">Davy Jones</a>
+            <div class="friend-img-placeholder davy-img">🐙</div>
+            <p class="friend-role">Absolutely NOT a friend (has my heart/debt)</p>
+          </div>
+
+          <div class="friend-card">
+            <a href="#navy" class="friend-name">Royal Navy</a>
+            <div class="friend-img-placeholder navy-img">🇬🇧</div>
+            <p class="friend-role">Enemies (constantly trying to hang me)</p>
+          </div>
+
+          <div class="friend-card">
+            <a href="#dirt" class="friend-name">Jar of Dirt</a>
+            <div class="friend-img-placeholder dirt-img">🏺</div>
+            <p class="friend-role">Essential Defense Mechanism</p>
+          </div>
+
+          <div class="friend-card">
+            <a href="#rum" class="friend-name">Bottle of Rum</a>
+            <div class="friend-img-placeholder rum-img">🍾</div>
+            <p class="friend-role">True Love & Soulmate</p>
+          </div>
+
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- RIGHT COLUMN -->
+    <section class="right-column">
+
+      <!-- Extended Network Announcement Banner -->
+      <div class="network-banner">
+        <h2>Captain Jack Sparrow is in your extended network!</h2>
+        <p>(Whether you permitted him to be here or not, mate.)</p>
+      </div>
+
+      <!-- Music Player Box -->
+      <div class="section-box music-player-box">
+        <div class="box-header">
+          <h3>MySpace Music Player - Jack's Sea Shanty Station</h3>
+        </div>
+        <div class="box-content player-content">
+          <div class="player-controls">
+            <button id="play-btn" class="player-btn" onclick="toggleAudio()">▶ PLAY</button>
+
+            <div class="track-info">
+              <span class="track-title">🎵 Hans Zimmer - He's a Pirate (Mid-2000s 8-Bit Remix)</span>
+              <div class="progress-bar-bg">
+                <div id="progress-bar-fill" class="progress-bar-fill"></div>
+              </div>
+            </div>
+          </div>
+          <div class="equalizer-visualizer">
+            <div class="bar bar1"></div>
+            <div class="bar bar2"></div>
+            <div class="bar bar3"></div>
+            <div class="bar bar4"></div>
+            <div class="bar bar5"></div>
+            <div class="bar bar6"></div>
+            <div class="bar bar7"></div>
+            <div class="bar bar8"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Blurbs Section -->
+      <div class="section-box blurbs-box">
+        <div class="box-header">
+          <h3>Captain Jack Sparrow's Blurbs</h3>
+        </div>
+        <div class="box-content">
+
+          <h4 class="blurb-title">About Me:</h4>
+          <p class="blurb-text">
+            Me? I'm dishonest. And a dishonest man you can always trust to be dishonest. Honestly. It's the honest ones you want to watch out for, because you can never predict when they're going to do something incredibly... stupid.
+          </p>
+          <p class="blurb-text">
+            Gentlemen! (And ladies). You will always remember this as the day that you almost caught... <strong>CAPTAIN Jack Sparrow!</strong>
+          </p>
+          <p class="blurb-text">
+            If you're wondering how I escaped that desert island: I waded into the shallows, stood motionless for three days and three nights until all manner of sea creatures became accustomed to my presence. On the fourth morning, I roped a couple of sea turtles, lashed 'em together, and made a raft out of my own back hair. Savvy?
+          </p>
+
+          <h4 class="blurb-title">Who I'd Like to Meet:</h4>
+          <p class="blurb-text">
+            1. Anyone with a full bottle of rum.<br>
+            2. Anyone who understands that the compass does NOT point north.<br>
+            3. A magistrate willing to grant total amnesty for minor ship acquisition.<br>
+            4. Someone who can explain why the rum is ALWAYS GONE.
+          </p>
+
+        </div>
+      </div>
+
+      <!-- The Black Pearl Section (Ship Infobox) -->
+      <div class="section-box ship-box">
+        <div class="box-header">
+          <h3>The Ship: The Black Pearl</h3>
+        </div>
+        <div class="box-content ship-content">
+          <div class="ship-img-container">
+            <img src="assets/black_pearl.webp" alt="The Black Pearl" class="ship-img">
+          </div>
+          <div class="ship-stats-table">
+            <table class="pirate-table">
+              <tr>
+                <td class="stat-label">Ships Captained:</td>
+                <td class="stat-value">Several</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Ships Lost:</td>
+                <td class="stat-value">Also several</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Current Owner:</td>
+                <td class="stat-value">Complicated</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Speed:</td>
+                <td class="stat-value">Fast enough</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Sails:</td>
+                <td class="stat-value">Blackened canvas (Very intimidating)</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Special Features:</td>
+                <td class="stat-value">Outruns the Flying Dutchman (mostly)</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Humorous Statistics Section -->
+      <div class="section-box stats-box">
+        <div class="box-header">
+          <h3>Pirate Captain Official Statistics</h3>
+        </div>
+        <div class="box-content">
+          <table class="pirate-table">
+            <tr>
+              <td class="stat-label">Rum Consumed:</td>
+              <td class="stat-value gold-text">Classified</td>
+            </tr>
+            <tr>
+              <td class="stat-label">Times Arrested:</td>
+              <td class="stat-value">Enough</td>
+            </tr>
+            <tr>
+              <td class="stat-label">Times Escaped:</td>
+              <td class="stat-value highlight-text">yes</td>
+            </tr>
+            <tr>
+              <td class="stat-label">Successful Plans:</td>
+              <td class="stat-value">Debatable</td>
+            </tr>
+            <tr>
+              <td class="stat-label">Times Saying "Savvy":</td>
+              <td class="stat-value">Excessive</td>
+            </tr>
+            <tr>
+              <td class="stat-label">Mutinies Endured:</td>
+              <td class="stat-value">2 (Thanks, Barbossa)</td>
+            </tr>
+            <tr>
+              <td class="stat-label">Sea Turtles Lashed:</td>
+              <td class="stat-value">2</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Interactive Compass & Dirt Jar Easter Egg Widget -->
+      <div class="section-box easter-egg-box">
+        <div class="box-header">
+          <h3>Interactive Captain's Trinkets</h3>
+        </div>
+        <div class="box-content trinket-flex">
+          <div class="trinket-card" onclick="spinCompass()">
+            <div id="compass-icon" class="trinket-icon">🧭</div>
+            <div class="trinket-title">Jack's Compass</div>
+            <div class="trinket-desc" id="compass-status">Click to find what you want most...</div>
+          </div>
+
+          <div class="trinket-card" onclick="shakeJarOfDirt()">
+            <div id="jar-icon" class="trinket-icon">🏺</div>
+            <div class="trinket-title">Jar of Dirt</div>
+            <div class="trinket-desc" id="jar-status">I've got a jar of dirt! Guess what's inside?</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comments Section -->
+      <div class="section-box comments-box">
+        <div class="box-header">
+          <h3>Captain Jack Sparrow's Friend Comments</h3>
+          <span class="comment-count">Displaying <span class="gold-text" id="comment-num">5</span> of 500 comments</span>
+        </div>
+        <div class="box-content">
+
+          <!-- Add Comment Form -->
+          <div class="add-comment-area">
+            <h4>Leave a Message for the Captain:</h4>
+            <div class="comment-input-wrap">
+              <input type="text" id="user-name-input" placeholder="Your Pirate Name (e.g., Scallywag Pete)" value="Anonymous Pirate">
+              <textarea id="comment-text-input" placeholder="Write your comment here, savvy?"></textarea>
+              <button class="post-comment-btn" onclick="postUserComment()">Post Comment</button>
+            </div>
+          </div>
+
+          <hr class="comment-divider">
+
+          <!-- Comment List -->
+          <div class="comment-list" id="comment-list">
+
+            <div class="comment-item">
+              <div class="comment-author">
+                <span class="author-name">Hector Barbossa</span>
+                <span class="comment-date">Oct 14, 2006 at 4:20 PM</span>
+              </div>
+              <div class="comment-body">
+                Jack, you treacherous sea dog! Return the Black Pearl to its rightful captain or I'll have the monkeys tear your dreadlocks off one by one!
+              </div>
+            </div>
+
+            <div class="comment-item">
+              <div class="comment-author">
+                <span class="author-name">Will Turner</span>
+                <span class="comment-date">Oct 13, 2006 at 11:15 AM</span>
+              </div>
+              <div class="comment-body">
+                Jack, Elizabeth and I are waiting at the docks. Did you steal my blacksmithing tools again? Also, why is the rum ALWAYS gone whenever you show up?
+              </div>
+            </div>
+
+            <div class="comment-item">
+              <div class="comment-author">
+                <span class="author-name">Elizabeth Swann</span>
+                <span class="comment-date">Oct 12, 2006 at 9:02 PM</span>
+              </div>
+              <div class="comment-body">
+                You left me stranded on a desert island... AGAIN. And no, drinking rum and singing sea shanties does not count as a survival strategy!
+              </div>
+            </div>
+
+            <div class="comment-item">
+              <div class="comment-author">
+                <span class="author-name">Joshamee Gibbs</span>
+                <span class="comment-date">Oct 10, 2006 at 2:45 PM</span>
+              </div>
+              <div class="comment-body">
+                Aye Captain! The wind is blowing fair and the crew is ready for Tortuga! Just mind the curses this time, eh?
+              </div>
+            </div>
+
+            <div class="comment-item">
+              <div class="comment-author">
+                <span class="author-name">Davy Jones</span>
+                <span class="comment-date">Oct 8, 2006 at 12:01 AM</span>
+              </div>
+              <div class="comment-body">
+                100 YEARS ABOARD THE FLYING DUTCHMAN! That was the deal, Jack Sparrow! You cannot escape your debt forever!
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer class="myspace-footer">
+    <p>About | FAQ | Terms | Privacy | Safety | Pirate Code | Port Royal Gazette</p>
+    <p>© 2003-2006 MySpace.com / Captain Jack Sparrow Enterprises. All rights reserved. Savvy?</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
