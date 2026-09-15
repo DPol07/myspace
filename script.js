@@ -208,39 +208,3 @@ function escapeHtml(text) {
   div.innerText = text;
   return div.innerHTML;
 }
-
-// Cotton's Parrot Interactive Easter Egg
-const parrotQuotes = [
-  "“Wind in your sails!”",
-  "“Mum’s the word.”",
-  "“Pieces of eight!”",
-  "“Dead men tell no tales!”",
-  "“Walk the plank!”"
-];
-
-let parrotQuoteIndex = 0;
-let bubbleTimeout = null;
-
-function squawkParrot() {
-  const parrotBtn = document.getElementById('parrot-emoji-btn');
-  const speechBubble = document.getElementById('parrot-speech-bubble');
-
-  // Trigger bounce animation on emoji
-  parrotBtn.classList.remove('bounce');
-  void parrotBtn.offsetWidth; // Force reflow
-  parrotBtn.classList.add('bounce');
-
-  // Get current quote and advance index sequentially
-  const quote = parrotQuotes[parrotQuoteIndex];
-  parrotQuoteIndex = (parrotQuoteIndex + 1) % parrotQuotes.length;
-
-  // Update speech bubble text and display
-  speechBubble.innerText = quote;
-  speechBubble.classList.add('active');
-
-  // Reset auto-hide timer
-  if (bubbleTimeout) clearTimeout(bubbleTimeout);
-  bubbleTimeout = setTimeout(() => {
-    speechBubble.classList.remove('active');
-  }, 4000);
-}
