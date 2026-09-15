@@ -3,31 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MySpace.com - Captain Jack Sparrow - Savvy?</title>
+  <title>MySpace | Captain Jack Sparrow - Savvy?</title>
+  <!-- Google Fonts for Cinematic Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-  <!-- Top Retro Navigation Bar -->
+  <!-- Background Cinematic Glow Effects -->
+  <div class="ambient-glow"></div>
+
+  <!-- Aztec Gold Floating Ambient Coins Container -->
+  <div class="aztec-coins-container">
+    <div class="aztec-coin coin-1" aria-hidden="true">
+      <img src="assets/aztec-coin.png" alt="" class="coin-img">
+      <div class="coin-glint"></div>
+    </div>
+    <div class="aztec-coin coin-2" aria-hidden="true">
+      <img src="assets/aztec-coin.png" alt="" class="coin-img">
+      <div class="coin-glint"></div>
+    </div>
+    <div class="aztec-coin coin-3" aria-hidden="true">
+      <img src="assets/aztec-coin.png" alt="" class="coin-img">
+      <div class="coin-glint"></div>
+    </div>
+    <div class="aztec-coin coin-4" aria-hidden="true">
+      <img src="assets/aztec-coin.png" alt="" class="coin-img">
+      <div class="coin-glint"></div>
+    </div>
+    <div class="aztec-coin coin-5" aria-hidden="true">
+      <img src="assets/aztec-coin.png" alt="" class="coin-img">
+      <div class="coin-glint"></div>
+    </div>
+  </div>
+
+  <!-- Top Retro-Modern Navigation Bar -->
   <header class="myspace-header">
     <div class="header-inner">
       <div class="logo-area">
         <span class="myspace-logo">myspace<span class="skull-icon">☠️</span>.com</span>
         <span class="tagline">| a place for pirates</span>
       </div>
-      <div class="nav-links">
-        <a href="#home" onclick="alert('You are already at the epicenter of the Caribbean, mate!')">Home</a> |
-        <a href="#browse" onclick="alert('Browsing for treasure? Check the nearest rum barrel.')">Browse</a> |
-        <a href="#search" onclick="alert('Searching for the Black Pearl... Status: Complicated.')">Search</a> |
-        <a href="#invite" onclick="alert('Invite sent via carrier seagull.')">Invite Friends</a> |
-        <a href="#film" onclick="alert('Featured Film: Curse of the Black Pearl')">Film</a> |
-        <a href="#mail" onclick="alert('Message in a bottle delivered!')">Mail (3)</a> |
+      <nav class="nav-links">
+        <a href="#home" onclick="alert('You are already at the epicenter of the Caribbean, mate!')">Home</a>
+        <a href="#browse" onclick="alert('Browsing for treasure? Check the nearest rum barrel.')">Browse</a>
+        <a href="#search" onclick="alert('Searching for the Black Pearl... Status: Complicated.')">Search</a>
+        <a href="#invite" onclick="alert('Invite sent via carrier seagull.')">Invite Friends</a>
+        <a href="#film" onclick="alert('Featured Film: Curse of the Black Pearl')">Film</a>
+        <a href="#mail" onclick="alert('Message in a bottle delivered!')">Mail (3)</a>
         <a href="#blog" onclick="alert('Jack\'s Captain Log: Why is the rum gone?')">Blog</a>
-      </div>
+      </nav>
     </div>
   </header>
 
-  <!-- Marquee Banner -->
+  <!-- Ticker Marquee Banner -->
   <div class="marquee-container">
     <marquee scrollamount="5" behavior="scroll" direction="left">
       🏴‍☠️ ATTENTION: You are viewing the official profile of CAPTAIN Jack Sparrow! Mind the rum, mind the compass, and remember this as the day you ALMOST caught Captain Jack Sparrow! 🏴‍☠️
@@ -40,51 +71,51 @@
     <!-- LEFT COLUMN -->
     <aside class="left-column">
 
-      <!-- Profile Header / Name -->
+      <!-- Profile Title Header -->
       <div class="profile-title-box">
-        <h1>CAPTAIN Jack Sparrow</h1>
+        <h1 class="captain-title">CAPTAIN Jack Sparrow</h1>
         <p class="headline-quote">"Not all treasure is silver and gold, mate... mostly it's rum."</p>
       </div>
 
       <!-- Main Photo & Status -->
-      <div class="profile-pic-container">
+      <div class="profile-pic-card">
         <div class="image-frame">
           <img src="assets/jack_profile.webp" alt="Captain Jack Sparrow" class="profile-pic">
           <div class="online-now">
             <span class="blink-dot"></span> CAPTAIN IS ONLINE <span class="sub-status">(or at sea)</span>
           </div>
         </div>
-        <p class="profile-details-summary">
-          <strong>Mood:</strong> Savvy 🍸<br>
-          <strong>Status:</strong> It's complicated<br>
-          <strong>Location:</strong> The Caribbean (Uncharted)<br>
-          <strong>Occupation:</strong> Pirate / Captain / Professional Escapist
-        </p>
+        <div class="profile-details-summary">
+          <div class="detail-item"><span class="detail-label">Mood:</span> <span class="detail-val">Savvy 🍸</span></div>
+          <div class="detail-item"><span class="detail-label">Status:</span> <span class="detail-val">It's complicated</span></div>
+          <div class="detail-item"><span class="detail-label">Location:</span> <span class="detail-val">The Caribbean (Uncharted)</span></div>
+          <div class="detail-item"><span class="detail-label">Occupation:</span> <span class="detail-val">Pirate / Captain / Professional Escapist</span></div>
+        </div>
       </div>
 
-      <!-- Contact Box Table -->
+      <!-- Contact Grid Box -->
       <div class="section-box contact-box">
         <div class="box-header">
           <h3>Contacting Captain Jack Sparrow</h3>
         </div>
         <div class="box-content contact-grid">
           <button class="contact-btn" onclick="sendBottleMsg()">
-            <span class="icon">🍾</span> Send Message
+            <span class="btn-icon">🍾</span> <span class="btn-text">Send Message</span>
           </button>
           <button class="contact-btn" onclick="addFriend()">
-            <span class="icon">⚔️</span> Add to Friends
+            <span class="btn-icon">⚔️</span> <span class="btn-text">Add to Friends</span>
           </button>
           <button class="contact-btn" onclick="addToFavs()">
-            <span class="icon">⭐</span> Add to Favorites
+            <span class="btn-icon">⭐</span> <span class="btn-text">Add to Favorites</span>
           </button>
           <button class="contact-btn" onclick="bottlePigeon()">
-            <span class="icon">📜</span> Send Parley Request
+            <span class="btn-icon">📜</span> <span class="btn-text">Send Parley Request</span>
           </button>
           <button class="contact-btn" onclick="blockUser()">
-            <span class="icon">🚫</span> Block User (Good Luck)
+            <span class="btn-icon">🚫</span> <span class="btn-text">Block User (Good Luck)</span>
           </button>
           <button class="contact-btn" onclick="rankUser()">
-            <span class="icon">🏴‍☠️</span> Rate Profile (10/10 Rum)
+            <span class="btn-icon">🏴‍☠️</span> <span class="btn-text">Rate Profile (10/10 Rum)</span>
           </button>
         </div>
       </div>
@@ -179,12 +210,33 @@
         </div>
       </div>
 
+      <!-- Cotton's Parrot Widget -->
+      <div class="section-box parrot-box">
+        <div class="box-header">
+          <h3>Cotton's Parrot (Spokes-Bird)</h3>
+          <span class="gold-text" style="font-size:11px;">Click to Squawk! 🦜</span>
+        </div>
+        <div class="box-content parrot-content">
+          <div class="parrot-card" onclick="squawkParrot()">
+            <div class="speech-bubble" id="parrot-speech">
+              "Wind in your sails!"
+            </div>
+            <div class="parrot-img-frame">
+              <img src="assets/parrot.webp" alt="Cotton and his Parrot" class="parrot-img">
+              <div id="parrot-icon-overlay" class="trinket-icon-overlay parrot-overlay">🦜</div>
+            </div>
+            <div class="parrot-title">Cotton's Parrot</div>
+            <div class="parrot-desc">Cotton had his tongue cut out, so the parrot speaks for him. Click to hear him squawk!</div>
+          </div>
+        </div>
+      </div>
+
     </aside>
 
     <!-- RIGHT COLUMN -->
     <section class="right-column">
 
-      <!-- Extended Network Announcement Banner -->
+      <!-- Extended Network Banner -->
       <div class="network-banner">
         <h2>Captain Jack Sparrow is in your extended network!</h2>
         <p>(Whether you permitted him to be here or not, mate.)</p>
@@ -200,8 +252,11 @@
             <button id="play-btn" class="player-btn" onclick="toggleAudio()">▶ PLAY</button>
 
             <div class="track-info">
-              <span class="track-title">🎵 Hans Zimmer - He's a Pirate (Mid-2000s 8-Bit Remix)</span>
-              <div class="progress-bar-bg">
+              <div class="track-header">
+                <span class="track-title">🎵 Hans Zimmer - He's a Pirate (Cinematic Theme)</span>
+                <span id="time-display" class="time-display">0:00 / 0:32</span>
+              </div>
+              <div class="progress-bar-bg" onclick="seekAudio(event)">
                 <div id="progress-bar-fill" class="progress-bar-fill"></div>
               </div>
             </div>
@@ -215,6 +270,10 @@
             <div class="bar bar6"></div>
             <div class="bar bar7"></div>
             <div class="bar bar8"></div>
+            <div class="bar bar9"></div>
+            <div class="bar bar10"></div>
+            <div class="bar bar11"></div>
+            <div class="bar bar12"></div>
           </div>
         </div>
       </div>
@@ -334,13 +393,19 @@
         </div>
         <div class="box-content trinket-flex">
           <div class="trinket-card" onclick="spinCompass()">
-            <div id="compass-icon" class="trinket-icon">🧭</div>
+            <div class="trinket-img-frame">
+              <img src="assets/compass.webp" alt="Jack's Compass" class="trinket-img compass-img">
+              <div id="compass-icon-overlay" class="trinket-icon-overlay">🧭</div>
+            </div>
             <div class="trinket-title">Jack's Compass</div>
             <div class="trinket-desc" id="compass-status">Click to find what you want most...</div>
           </div>
 
           <div class="trinket-card" onclick="shakeJarOfDirt()">
-            <div id="jar-icon" class="trinket-icon">🏺</div>
+            <div class="trinket-img-frame">
+              <img src="assets/jar_of_dirt.webp" alt="Jar of Dirt" class="trinket-img jar-img">
+              <div id="jar-icon-overlay" class="trinket-icon-overlay">🏺</div>
+            </div>
             <div class="trinket-title">Jar of Dirt</div>
             <div class="trinket-desc" id="jar-status">I've got a jar of dirt! Guess what's inside?</div>
           </div>
