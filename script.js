@@ -251,11 +251,12 @@ function rankUser() {
 let compassSpinCount = 0;
 function spinCompass() {
   compassSpinCount++;
-  const compassIcon = document.getElementById('compass-icon');
+  const compassOverlay = document.getElementById('compass-icon-overlay');
   const compassStatus = document.getElementById('compass-status');
 
-  compassIcon.style.transform = `rotate(${compassSpinCount * 360 + 135}deg)`;
-  compassIcon.style.transition = 'transform 1s cubic-bezier(0.34, 1.56, 0.64, 1)';
+  if (compassOverlay) {
+    compassOverlay.style.transform = `rotate(${compassSpinCount * 360 + 135}deg)`;
+  }
 
   const targets = [
     "The compass points toward... a full bottle of rum! 🍾",
@@ -272,11 +273,13 @@ function spinCompass() {
 let jarShakes = 0;
 function shakeJarOfDirt() {
   jarShakes++;
-  const jarIcon = document.getElementById('jar-icon');
+  const jarOverlay = document.getElementById('jar-icon-overlay');
   const jarStatus = document.getElementById('jar-status');
 
-  jarIcon.style.transform = 'scale(1.2) rotate(15deg)';
-  setTimeout(() => { jarIcon.style.transform = 'none'; }, 300);
+  if (jarOverlay) {
+    jarOverlay.style.transform = 'scale(1.25)';
+    setTimeout(() => { jarOverlay.style.transform = 'none'; }, 250);
+  }
 
   if (jarShakes % 2 === 1) {
     jarStatus.innerHTML = '<span class="gold-text">"I\'ve got a jar of dirt! I\'ve got a jar of dirt! And guess what\'s inside it?"</span> 🎵';
