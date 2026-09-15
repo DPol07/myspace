@@ -17,92 +17,25 @@
 
   <!-- Aztec Gold Floating Ambient Coins Container -->
   <div class="aztec-coins-container">
-    <!-- SVG Defs Template for reused Aztec Gold Coin graphic -->
-    <svg style="display: none;">
-      <defs>
-        <!-- Metallic Gold Radial Gradient -->
-        <radialGradient id="aztec-gold-grad" cx="35%" cy="30%" r="70%">
-          <stop offset="0%" stop-color="#fff4b8" />
-          <stop offset="25%" stop-color="#f5d77f" />
-          <stop offset="55%" stop-color="#d4af37" />
-          <stop offset="82%" stop-color="#9a7620" />
-          <stop offset="100%" stop-color="#4a350a" />
-        </radialGradient>
-
-        <!-- Inner Aged Bronze/Gold Gradient -->
-        <radialGradient id="aztec-inner-grad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#e5c158" />
-          <stop offset="70%" stop-color="#b88e28" />
-          <stop offset="100%" stop-color="#5c420e" />
-        </radialGradient>
-
-        <!-- Glint Highlight Gradient -->
-        <linearGradient id="aztec-glint-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6" />
-          <stop offset="40%" stop-color="#fff3a1" stop-opacity="0.2" />
-          <stop offset="100%" stop-color="#d4af37" stop-opacity="0" />
-        </linearGradient>
-
-        <!-- Aztec Coin Symbol -->
-        <g id="aztec-coin-symbol">
-          <!-- Outer Rim -->
-          <circle cx="50" cy="50" r="47" fill="url(#aztec-gold-grad)" stroke="#2d1e05" stroke-width="2.5" />
-
-          <!-- Beaded Outer Border -->
-          <circle cx="50" cy="50" r="43" fill="none" stroke="#7a5b13" stroke-width="1.5" stroke-dasharray="3.2 2.5" />
-
-          <!-- Inner Recessed Ring -->
-          <circle cx="50" cy="50" r="37" fill="url(#aztec-inner-grad)" stroke="#3d2907" stroke-width="2" />
-
-          <!-- Aztec Rays / Notch Patterns -->
-          <g stroke="#4a3408" stroke-width="1.8" opacity="0.75">
-            <line x1="50" y1="13" x2="50" y2="20" />
-            <line x1="50" y1="80" x2="50" y2="87" />
-            <line x1="13" y1="50" x2="20" y2="50" />
-            <line x1="80" y1="50" x2="87" y2="50" />
-            <line x1="24" y1="24" x2="29" y2="29" />
-            <line x1="71" y1="71" x2="76" y2="76" />
-            <line x1="24" y1="76" x2="29" y2="71" />
-            <line x1="71" y1="29" x2="76" y2="24" />
-          </g>
-
-          <!-- Inner Aztec Glyph Circle -->
-          <circle cx="50" cy="50" r="23" fill="#8f6919" stroke="#362305" stroke-width="1.5" />
-
-          <!-- Stylized Skull / Aztec Medallion Face Motif -->
-          <g fill="#2b1b04" opacity="0.85">
-            <!-- Eye sockets -->
-            <path d="M 41 45 C 41 40, 46 40, 46 45 C 46 48, 41 48, 41 45 Z" />
-            <path d="M 54 45 C 54 40, 59 40, 59 45 C 59 48, 54 48, 54 45 Z" />
-            <!-- Nose cavity -->
-            <polygon points="50,48 48,53 52,53" />
-            <!-- Teeth / Jaw engravings -->
-            <path d="M 44 57 L 44 62 M 48 57 L 48 63 M 52 57 L 52 63 M 56 57 L 56 62" stroke="#2b1b04" stroke-width="1.8" />
-            <!-- Brow & Crown markings -->
-            <path d="M 39 40 Q 50 34 61 40" stroke="#2b1b04" stroke-width="1.8" fill="none" />
-          </g>
-
-          <!-- Metallic Shimmer Glint Overlay -->
-          <circle cx="50" cy="50" r="46" fill="url(#aztec-glint-grad)" class="coin-glint" />
-        </g>
-      </defs>
-    </svg>
-
-    <!-- Coin Instances -->
     <div class="aztec-coin coin-1" aria-hidden="true">
-      <svg viewBox="0 0 100 100"><use href="#aztec-coin-symbol"/></svg>
+      <img src="assets/aztec-coin.png" alt="" class="coin-img">
+      <div class="coin-glint"></div>
     </div>
     <div class="aztec-coin coin-2" aria-hidden="true">
-      <svg viewBox="0 0 100 100"><use href="#aztec-coin-symbol"/></svg>
+      <img src="assets/aztec-coin.png" alt="" class="coin-img">
+      <div class="coin-glint"></div>
     </div>
     <div class="aztec-coin coin-3" aria-hidden="true">
-      <svg viewBox="0 0 100 100"><use href="#aztec-coin-symbol"/></svg>
+      <img src="assets/aztec-coin.png" alt="" class="coin-img">
+      <div class="coin-glint"></div>
     </div>
     <div class="aztec-coin coin-4" aria-hidden="true">
-      <svg viewBox="0 0 100 100"><use href="#aztec-coin-symbol"/></svg>
+      <img src="assets/aztec-coin.png" alt="" class="coin-img">
+      <div class="coin-glint"></div>
     </div>
     <div class="aztec-coin coin-5" aria-hidden="true">
-      <svg viewBox="0 0 100 100"><use href="#aztec-coin-symbol"/></svg>
+      <img src="assets/aztec-coin.png" alt="" class="coin-img">
+      <div class="coin-glint"></div>
     </div>
   </div>
 
