@@ -288,6 +288,35 @@ function shakeJarOfDirt() {
   }
 }
 
+// Cotton's Parrot Interaction
+const parrotQuotes = [
+  "“Wind in your sails!”",
+  "“Anchors aweigh!”",
+  "“Dead men tell no tales!”",
+  "“Parlay?”",
+  "“Mum’s the word.”"
+];
+let parrotQuoteIndex = 0;
+
+function squawkParrot() {
+  const speechBubble = document.getElementById('parrot-speech');
+  const parrotOverlay = document.getElementById('parrot-icon-overlay');
+
+  // Cycle quote sequentially (current index updated first)
+  if (speechBubble) {
+    speechBubble.innerText = parrotQuotes[parrotQuoteIndex];
+  }
+  parrotQuoteIndex = (parrotQuoteIndex + 1) % parrotQuotes.length;
+
+  // Bounce/tilt emoji animation
+  if (parrotOverlay) {
+    parrotOverlay.classList.remove('squawk-anim');
+    // Force reflow
+    void parrotOverlay.offsetWidth;
+    parrotOverlay.classList.add('squawk-anim');
+  }
+}
+
 // Comments Interaction & Auto-Replies
 let commentCount = 5;
 
