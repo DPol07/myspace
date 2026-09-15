@@ -697,10 +697,26 @@ a:hover {
   box-shadow: 0 4px 12px rgba(212, 175, 55, 0.15);
 }
 
-.trinket-icon {
-  font-size: 36px;
-  margin-bottom: 6px;
-  display: inline-block;
+.trinket-img-frame {
+  width: 100%;
+  height: 140px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border-gold);
+  margin-bottom: 10px;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+}
+
+.trinket-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
 }
 
 .trinket-title {
