@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <defs>
+    <!-- Brighter Gunmetal Steel Gradient for Hover -->
+    <linearGradient id="hookMetalHover" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#b0bec5"/>
+      <stop offset="65%" stop-color="#546e7a"/>
+      <stop offset="100%" stop-color="#263238"/>
+    </linearGradient>
+    <linearGradient id="cuffMetal" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#455a64"/>
+      <stop offset="50%" stop-color="#90a4ae"/>
+      <stop offset="100%" stop-color="#37474f"/>
+    </linearGradient>
+    <filter id="shadowHover" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="1" dy="1" stdDeviation="1.5" flood-color="#d4af37" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadowHover)" transform="rotate(-8 3 3)">
+    <!-- Base Socket / Cuff -->
+    <path d="M 2 2 C 2 1, 6 1, 6 2 L 6 6 C 6 7, 2 7, 2 6 Z" fill="url(#cuffMetal)" stroke="#102027" stroke-width="0.5"/>
+    <rect x="2" y="5" width="4" height="1.5" fill="#ffffff" opacity="0.8"/>
+
+    <!-- Hook Curve -->
+    <path d="M 3 6
+             C 3 13, 14 15, 14 9
+             C 14 5, 9 3, 5 3
+             C 4 3, 3.5 3.5, 4 4.2
+             C 4.5 4.8, 5.5 4.8, 6.5 4.8
+             C 8.5 4.8, 11.5 6.2, 11.5 9
+             C 11.5 12, 5 10.5, 5 6 Z"
+          fill="url(#hookMetalHover)"
+          stroke="#102027"
+          stroke-width="0.6"
+          stroke-linejoin="round"/>
+
+    <!-- Sharp Hook Tip Highlight & Glint -->
+    <path d="M 5 3 L 3.5 3.5 L 4.2 4.5 Z" fill="#ffffff"/>
+    <circle cx="3.5" cy="3.5" r="1.2" fill="#f5d77f" opacity="0.85"/>
+  </g>
+</svg>
