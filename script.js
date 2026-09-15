@@ -1,225 +1,72 @@
 /* ==========================================================================
-   Modern Cinematic MySpace - Captain Jack Sparrow Interactive Script
+   2000s MySpace - Captain Jack Sparrow Interactive Script
    ========================================================================== */
 
-// Audio Player State & Web Audio API Engine
-let audioCtx = null;
+// Audio Player Simulation
 let isPlaying = false;
-let startTime = 0;
-let pauseOffset = 0;
-let totalDuration = 32; // 32 seconds track duration
-let progressTimer = null;
-let activeOscillators = [];
-
-// He's a Pirate (Hans Zimmer) Melody Sequence
-// Note definitions with frequencies and durations (in seconds)
-const pirateMelody = [
-  // Intro pickup
-  { freq: 293.66, dur: 0.2 }, { freq: 293.66, dur: 0.2 },
-  // Phrase 1
-  { freq: 293.66, dur: 0.2 }, { freq: 329.63, dur: 0.2 }, { freq: 349.23, dur: 0.4 },
-  { freq: 349.23, dur: 0.2 }, { freq: 349.23, dur: 0.2 }, { freq: 392.00, dur: 0.2 }, { freq: 329.63, dur: 0.4 },
-  { freq: 329.63, dur: 0.2 }, { freq: 293.66, dur: 0.2 }, { freq: 261.63, dur: 0.2 }, { freq: 261.63, dur: 0.2 }, { freq: 293.66, dur: 0.6 },
-
-  // Repeat motif 1
-  { freq: 293.66, dur: 0.2 }, { freq: 293.66, dur: 0.2 },
-  { freq: 293.66, dur: 0.2 }, { freq: 329.63, dur: 0.2 }, { freq: 349.23, dur: 0.4 },
-  { freq: 349.23, dur: 0.2 }, { freq: 349.23, dur: 0.2 }, { freq: 392.00, dur: 0.2 }, { freq: 329.63, dur: 0.4 },
-  { freq: 329.63, dur: 0.2 }, { freq: 293.66, dur: 0.2 }, { freq: 261.63, dur: 0.2 }, { freq: 261.63, dur: 0.2 }, { freq: 293.66, dur: 0.6 },
-
-  // Phrase 2 (Climax)
-  { freq: 293.66, dur: 0.2 }, { freq: 293.66, dur: 0.2 },
-  { freq: 293.66, dur: 0.2 }, { freq: 349.23, dur: 0.2 }, { freq: 392.00, dur: 0.4 },
-  { freq: 392.00, dur: 0.2 }, { freq: 392.00, dur: 0.2 }, { freq: 440.00, dur: 0.2 }, { freq: 466.16, dur: 0.4 },
-  { freq: 466.16, dur: 0.2 }, { freq: 440.00, dur: 0.2 }, { freq: 392.00, dur: 0.2 }, { freq: 440.00, dur: 0.2 }, { freq: 293.66, dur: 0.6 },
-
-  // Phrase 3
-  { freq: 293.66, dur: 0.2 }, { freq: 349.23, dur: 0.2 },
-  { freq: 392.00, dur: 0.4 }, { freq: 466.16, dur: 0.2 }, { freq: 440.00, dur: 0.4 },
-  { freq: 392.00, dur: 0.2 }, { freq: 349.23, dur: 0.2 }, { freq: 293.66, dur: 0.2 }, { freq: 329.63, dur: 0.4 },
-  { freq: 349.23, dur: 0.4 }, { freq: 329.63, dur: 0.4 }, { freq: 293.66, dur: 0.8 }
-];
-
-// Calculate actual duration of melody sequence
-let calculatedDuration = pirateMelody.reduce((sum, n) => sum + n.dur, 0);
-// Loop sequence 2 times to fill ~32s
-totalDuration = Math.round(calculatedDuration * 2);
-
-function initAudioContext() {
-  if (!audioCtx) {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (AudioCtx) {
-      audioCtx = new AudioCtx();
-    }
-  }
-  if (audioCtx && audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
-}
-
-function stopAllNotes() {
-  activeOscillators.forEach(node => {
-    try {
-      node.stop();
-      node.disconnect();
-    } catch (e) {
-      // Ignore if already stopped
-    }
-  });
-  activeOscillators = [];
-}
-
-function scheduleMelody(startOffsetSec) {
-  stopAllNotes();
-  if (!audioCtx) return;
-
-  const now = audioCtx.currentTime;
-  let timeCursor = 0;
-
-  // Loop melody twice
-  const fullMelody = [...pirateMelody, ...pirateMelody];
-
-  fullMelody.forEach((note) => {
-    const noteStart = timeCursor;
-    const noteEnd = timeCursor + note.dur;
-    timeCursor = noteEnd;
-
-    // Only schedule if the note starts after or straddles the startOffset
-    if (noteEnd > startOffsetSec) {
-      const scheduledStartTime = now + Math.max(0, noteStart - startOffsetSec);
-      const duration = (noteStart < startOffsetSec) ? (noteEnd - startOffsetSec) : note.dur;
-
-      // Lead synth oscillator
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-
-      osc.type = 'sawtooth';
-      osc.frequency.value = note.freq;
-
-      // Warm low-pass filter
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 1200;
-
-      const volume = 0.08;
-      gain.gain.setValueAtTime(volume, scheduledStartTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, scheduledStartTime + duration - 0.02);
-
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(audioCtx.destination);
-
-      osc.start(scheduledStartTime);
-      osc.stop(scheduledStartTime + duration);
-
-      activeOscillators.push(osc);
-
-      // Bass drone oscillator for depth
-      const bassOsc = audioCtx.createOscillator();
-      const bassGain = audioCtx.createGain();
-      bassOsc.type = 'triangle';
-      bassOsc.frequency.value = note.freq / 2;
-
-      bassGain.gain.setValueAtTime(0.04, scheduledStartTime);
-      bassGain.gain.exponentialRampToValueAtTime(0.001, scheduledStartTime + duration - 0.02);
-
-      bassOsc.connect(bassGain);
-      bassGain.connect(audioCtx.destination);
-
-      bassOsc.start(scheduledStartTime);
-      bassOsc.stop(scheduledStartTime + duration);
-
-      activeOscillators.push(bassOsc);
-    }
-  });
-}
+let progressInterval = null;
+let currentProgress = 0;
 
 function toggleAudio() {
-  initAudioContext();
-
   const playBtn = document.getElementById('play-btn');
   const eqVisualizer = document.querySelector('.equalizer-visualizer');
+  const progressBar = document.getElementById('progress-bar-fill');
 
   if (!isPlaying) {
-    // Start or Resume Playback
     isPlaying = true;
     playBtn.innerText = '⏸ PAUSE';
     eqVisualizer.classList.add('playing');
 
-    // If reached end, restart from beginning
-    if (pauseOffset >= totalDuration) {
-      pauseOffset = 0;
-    }
+    // Simulate audio playback progress bar
+    progressInterval = setInterval(() => {
+      currentProgress += 1;
+      if (currentProgress > 100) {
+        currentProgress = 0;
+      }
+      progressBar.style.width = currentProgress + '%';
+    }, 300);
 
-    startTime = Date.now() - (pauseOffset * 1000);
-    scheduleMelody(pauseOffset);
-
-    clearInterval(progressTimer);
-    progressTimer = setInterval(updateProgress, 100);
+    // Play synthesized theme melody via Web Audio API if browser permits
+    playPirateTune();
 
   } else {
-    // Pause Playback
     isPlaying = false;
     playBtn.innerText = '▶ PLAY';
     eqVisualizer.classList.remove('playing');
-
-    pauseOffset = (Date.now() - startTime) / 1000;
-    stopAllNotes();
-    clearInterval(progressTimer);
+    clearInterval(progressInterval);
   }
 }
 
-function updateProgress() {
-  if (!isPlaying) return;
-
-  const elapsed = (Date.now() - startTime) / 1000;
-  pauseOffset = elapsed;
-
-  const progressBar = document.getElementById('progress-bar-fill');
-  const timeDisplay = document.getElementById('time-display');
-
-  if (elapsed >= totalDuration) {
-    // Track finished
-    isPlaying = false;
-    pauseOffset = 0;
-    stopAllNotes();
-    clearInterval(progressTimer);
-
-    document.getElementById('play-btn').innerText = '▶ REPLAY';
-    document.querySelector('.equalizer-visualizer').classList.remove('playing');
-    if (progressBar) progressBar.style.width = '100%';
-    if (timeDisplay) timeDisplay.innerText = formatTime(totalDuration) + ' / ' + formatTime(totalDuration);
-    return;
+// Web Audio API Retro Chiptune Pirates Melody
+let audioCtx = null;
+function playPirateTune() {
+  if (!window.AudioContext && !window.webkitAudioContext) return;
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
 
-  const percent = (elapsed / totalDuration) * 100;
-  if (progressBar) progressBar.style.width = percent + '%';
-  if (timeDisplay) timeDisplay.innerText = formatTime(elapsed) + ' / ' + formatTime(totalDuration);
-}
+  // Quick 8-bit motif: D - F - G - G - G - A - A# - A# - A# - C - A - A - D - E - F - F - G - E - F - D
+  const notes = [
+    { freq: 293.66, dur: 0.2 }, { freq: 349.23, dur: 0.2 }, { freq: 392.00, dur: 0.4 },
+    { freq: 392.00, dur: 0.2 }, { freq: 440.00, dur: 0.2 }, { freq: 466.16, dur: 0.4 },
+    { freq: 466.16, dur: 0.2 }, { freq: 523.25, dur: 0.2 }, { freq: 440.00, dur: 0.4 },
+    { freq: 349.23, dur: 0.2 }, { freq: 392.00, dur: 0.4 }
+  ];
 
-function seekAudio(event) {
-  const progressBarBg = event.currentTarget;
-  const rect = progressBarBg.getBoundingClientRect();
-  const clickX = event.clientX - rect.left;
-  const percent = Math.max(0, Math.min(1, clickX / rect.width));
-
-  pauseOffset = percent * totalDuration;
-  startTime = Date.now() - (pauseOffset * 1000);
-
-  const progressBar = document.getElementById('progress-bar-fill');
-  const timeDisplay = document.getElementById('time-display');
-  if (progressBar) progressBar.style.width = (percent * 100) + '%';
-  if (timeDisplay) timeDisplay.innerText = formatTime(pauseOffset) + ' / ' + formatTime(totalDuration);
-
-  if (isPlaying) {
-    scheduleMelody(pauseOffset);
-  }
-}
-
-function formatTime(seconds) {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  let now = audioCtx.currentTime;
+  notes.forEach((note) => {
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = note.freq;
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + note.dur - 0.05);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + note.dur);
+    now += note.dur;
+  });
 }
 
 // Contact Buttons Functionality
@@ -251,12 +98,11 @@ function rankUser() {
 let compassSpinCount = 0;
 function spinCompass() {
   compassSpinCount++;
-  const compassOverlay = document.getElementById('compass-icon-overlay');
+  const compassIcon = document.getElementById('compass-icon');
   const compassStatus = document.getElementById('compass-status');
 
-  if (compassOverlay) {
-    compassOverlay.style.transform = `rotate(${compassSpinCount * 360 + 135}deg)`;
-  }
+  compassIcon.style.transform = `rotate(${compassSpinCount * 360 + 135}deg)`;
+  compassIcon.style.transition = 'transform 1s ease-out';
 
   const targets = [
     "The compass points toward... a full bottle of rum! 🍾",
@@ -273,13 +119,11 @@ function spinCompass() {
 let jarShakes = 0;
 function shakeJarOfDirt() {
   jarShakes++;
-  const jarOverlay = document.getElementById('jar-icon-overlay');
+  const jarIcon = document.getElementById('jar-icon');
   const jarStatus = document.getElementById('jar-status');
 
-  if (jarOverlay) {
-    jarOverlay.style.transform = 'scale(1.25)';
-    setTimeout(() => { jarOverlay.style.transform = 'none'; }, 250);
-  }
+  jarIcon.style.transform = 'shake 0.5s';
+  setTimeout(() => { jarIcon.style.transform = 'none'; }, 500);
 
   if (jarShakes % 2 === 1) {
     jarStatus.innerHTML = '<span class="gold-text">"I\'ve got a jar of dirt! I\'ve got a jar of dirt! And guess what\'s inside it?"</span> 🎵';
@@ -340,8 +184,8 @@ function postUserComment() {
     const randomReply = jackReplies[Math.floor(Math.random() * jackReplies.length)];
     const replyComment = document.createElement('div');
     replyComment.className = 'comment-item';
-    replyComment.style.borderLeft = '3px solid var(--text-gold)';
-    replyComment.style.background = 'rgba(25, 18, 12, 0.9)';
+    replyComment.style.borderLeft = '3px solid #ffd700';
+    replyComment.style.background = '#28170c';
 
     replyComment.innerHTML = `
       <div class="comment-author">
@@ -363,4 +207,40 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.innerText = text;
   return div.innerHTML;
+}
+
+// Cotton's Parrot Interactive Easter Egg
+const parrotQuotes = [
+  "“Wind in your sails!”",
+  "“Mum’s the word.”",
+  "“Pieces of eight!”",
+  "“Dead men tell no tales!”",
+  "“Walk the plank!”"
+];
+
+let parrotQuoteIndex = 0;
+let bubbleTimeout = null;
+
+function squawkParrot() {
+  const parrotBtn = document.getElementById('parrot-emoji-btn');
+  const speechBubble = document.getElementById('parrot-speech-bubble');
+
+  // Trigger bounce animation on emoji
+  parrotBtn.classList.remove('bounce');
+  void parrotBtn.offsetWidth; // Force reflow
+  parrotBtn.classList.add('bounce');
+
+  // Get current quote and advance index sequentially
+  const quote = parrotQuotes[parrotQuoteIndex];
+  parrotQuoteIndex = (parrotQuoteIndex + 1) % parrotQuotes.length;
+
+  // Update speech bubble text and display
+  speechBubble.innerText = quote;
+  speechBubble.classList.add('active');
+
+  // Reset auto-hide timer
+  if (bubbleTimeout) clearTimeout(bubbleTimeout);
+  bubbleTimeout = setTimeout(() => {
+    speechBubble.classList.remove('active');
+  }, 4000);
 }
