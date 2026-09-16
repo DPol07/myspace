@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Weathered Treasure Map Silhouette -->
+  <g fill="#2b2015">
+    <!-- Rolled/torn parchment outline -->
+    <path d="M25 30 C 50 20, 150 40, 175 25 C 185 50, 170 150, 180 175 C 150 185, 40 165, 20 180 C 10 150, 30 50, 25 30 Z" opacity="0.9"/>
+    <!-- Torn edges detail -->
+    <path d="M25 30 Q 35 45 20 60 Q 30 85 15 110 Q 30 140 20 180 M175 25 Q 160 55 178 85 Q 165 120 180 175" stroke="#2b2015" stroke-width="3" fill="none"/>
+    <!-- Map X marks the spot & dotted route -->
+    <path d="M50 60 L70 80 M70 60 L50 80" stroke="#2b2015" stroke-width="4" stroke-linecap="round"/>
+    <path d="M60 70 Q 90 110, 120 90 T 145 130" stroke="#2b2015" stroke-width="3" stroke-dasharray="6,6" fill="none"/>
+    <!-- Large X for treasure -->
+    <path d="M135 120 L155 140 M155 120 L135 140" stroke="#2b2015" stroke-width="6" stroke-linecap="round"/>
+    <!-- Compass rose silhouette detail -->
+    <polygon points="120,50 123,58 131,61 123,64 120,72 117,64 109,61 117,58"/>
+  </g>
+</svg>
