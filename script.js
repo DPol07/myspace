@@ -450,12 +450,42 @@ function handleCoinClick(coin, event) {
   // Hide original coin in page flow
   coin.classList.add('collected');
 
-  // Trigger flight transform on next frame
-  requestAnimationFrame(() => {
-    const deltaX = targetX - coinRect.left;
-    const deltaY = targetY - coinRect.top;
-    flyCoin.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0) scale(0.35) rotate(720deg)`;
-    flyCoin.style.opacity = '0.7';
+  const startX = coinRect.left;
+  const startY = coinRect.top;
+  const endX = targetX;
+  const endY = targetY;
+
+  // Calculate arc curve (lift higher in viewport for a cinematic parabolic arc)
+  const midX = (startX + endX) / 2 + (startX < endX ? -30 : 30);
+  const midY = Math.min(startY, endY) - 130;
+
+  const flightDuration = 1300; // 1.3s cinematic journey
+
+  // Smooth Web Animations API arced flight
+  flyCoin.animate([
+    {
+      transform: `translate3d(0px, 0px, 0) scale(1) rotate(0deg)`,
+      opacity: 1
+    },
+    {
+      transform: `translate3d(${midX - startX}px, ${midY - startY}px, 0) scale(0.85) rotate(320deg)`,
+      opacity: 1,
+      offset: 0.5
+    },
+    {
+      transform: `translate3d(${endX - startX}px, ${endY - startY}px, 0) scale(0.38) rotate(720deg)`,
+      opacity: 1,
+      offset: 0.92
+    },
+    {
+      transform: `translate3d(${endX - startX}px, ${endY - startY}px, 0) scale(0.15) rotate(750deg)`,
+      opacity: 0,
+      offset: 1
+    }
+  ], {
+    duration: flightDuration,
+    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+    fill: 'forwards'
   });
 
   // Handle arrival at chest
@@ -480,7 +510,7 @@ function handleCoinClick(coin, event) {
     if (collectedCoinsCount >= 5) {
       triggerCurseVictory(chestContainer);
     }
-  }, 650);
+  }, flightDuration);
 }
 
 function triggerCurseVictory(chestContainer) {
