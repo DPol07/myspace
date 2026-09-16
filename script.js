@@ -393,3 +393,128 @@ function escapeHtml(text) {
   div.innerText = text;
   return div.innerHTML;
 }
+
+/* ==========================================================================
+   Break The Curse Mini-Game Logic
+   ========================================================================== */
+let collectedCoinsCount = 0;
+
+document.addEventListener('DOMContentLoaded', () => {
+  initCurseMiniGame();
+});
+
+function initCurseMiniGame() {
+  const coins = document.querySelectorAll('.aztec-coin');
+  coins.forEach(coin => {
+    coin.addEventListener('click', (e) => handleCoinClick(coin, e));
+    coin.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleCoinClick(coin, e);
+      }
+    });
+  });
+}
+
+function handleCoinClick(coin, event) {
+  if (coin.classList.contains('collected') || coin.dataset.animating === 'true') {
+    return;
+  }
+
+  coin.dataset.animating = 'true';
+
+  const chestSvg = document.getElementById('treasure-chest-svg');
+  const chestContainer = document.getElementById('treasure-chest-container');
+  const countSpan = document.getElementById('curse-count');
+
+  if (!chestSvg || !chestContainer) return;
+
+  const coinRect = coin.getBoundingClientRect();
+  const chestRect = chestSvg.getBoundingClientRect();
+
+  // Target coordinates: center of chest
+  const targetX = chestRect.left + chestRect.width / 2 - coinRect.width / 2;
+  const targetY = chestRect.top + chestRect.height / 2 - coinRect.height / 2;
+
+  // Create flying coin clone for smooth fixed viewport animation
+  const flyCoin = document.createElement('div');
+  flyCoin.className = 'flying-aztec-coin';
+  flyCoin.innerHTML = '<img src="assets/aztec-coin.png" alt="" />';
+  flyCoin.style.width = `${coinRect.width}px`;
+  flyCoin.style.height = `${coinRect.height}px`;
+  flyCoin.style.left = `${coinRect.left}px`;
+  flyCoin.style.top = `${coinRect.top}px`;
+
+  document.body.appendChild(flyCoin);
+
+  // Hide original coin in page flow
+  coin.classList.add('collected');
+
+  // Trigger flight transform on next frame
+  requestAnimationFrame(() => {
+    const deltaX = targetX - coinRect.left;
+    const deltaY = targetY - coinRect.top;
+    flyCoin.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0) scale(0.35) rotate(720deg)`;
+    flyCoin.style.opacity = '0.7';
+  });
+
+  // Handle arrival at chest
+  setTimeout(() => {
+    flyCoin.remove();
+
+    collectedCoinsCount++;
+    if (countSpan) {
+      countSpan.innerText = collectedCoinsCount;
+    }
+
+    // Play chest shake and glow animation
+    chestContainer.classList.remove('shake');
+    void chestContainer.offsetWidth; // Force reflow
+    chestContainer.classList.add('shake');
+
+    setTimeout(() => {
+      chestContainer.classList.remove('shake');
+    }, 450);
+
+    // Check for victory condition (5/5 coins)
+    if (collectedCoinsCount >= 5) {
+      triggerCurseVictory(chestContainer);
+    }
+  }, 650);
+}
+
+function triggerCurseVictory(chestContainer) {
+  chestContainer.classList.add('victory');
+
+  // Generate golden sparkle particles
+  const sparklesContainer = document.getElementById('sparkles-container');
+  if (sparklesContainer) {
+    sparklesContainer.innerHTML = '';
+    for (let i = 0; i < 20; i++) {
+      const sparkle = document.createElement('div');
+      sparkle.className = 'gold-sparkle';
+      sparkle.style.left = '45%';
+      sparkle.style.top = '40%';
+
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 35 + Math.random() * 55;
+      const tx = Math.cos(angle) * dist;
+      const ty = Math.sin(angle) * dist;
+
+      sparkle.style.setProperty('--tx', `${tx}px`);
+      sparkle.style.setProperty('--ty', `${ty}px`);
+      sparkle.style.animationDelay = `${Math.random() * 0.3}s`;
+
+      sparklesContainer.appendChild(sparkle);
+    }
+  }
+
+  // Update status message with victory text
+  const statusDiv = document.getElementById('curse-status');
+  if (statusDiv) {
+    statusDiv.innerHTML = `
+      <div class="curse-victory-header">☠️ THE CURSE IS BROKEN</div>
+      <div class="curse-victory-msg">"The gold has been returned. Savvy?"</div>
+    `;
+  }
+}

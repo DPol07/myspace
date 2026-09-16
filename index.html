@@ -17,23 +17,23 @@
 
   <!-- Aztec Gold Floating Ambient Coins Container -->
   <div class="aztec-coins-container">
-    <div class="aztec-coin coin-1" aria-hidden="true">
+    <div class="aztec-coin coin-1" id="aztec-coin-1" role="button" tabindex="0" aria-label="Aztec Gold Coin 1 of 5">
       <img src="assets/aztec-coin.png" alt="" class="coin-img">
       <div class="coin-glint"></div>
     </div>
-    <div class="aztec-coin coin-2" aria-hidden="true">
+    <div class="aztec-coin coin-2" id="aztec-coin-2" role="button" tabindex="0" aria-label="Aztec Gold Coin 2 of 5">
       <img src="assets/aztec-coin.png" alt="" class="coin-img">
       <div class="coin-glint"></div>
     </div>
-    <div class="aztec-coin coin-3" aria-hidden="true">
+    <div class="aztec-coin coin-3" id="aztec-coin-3" role="button" tabindex="0" aria-label="Aztec Gold Coin 3 of 5">
       <img src="assets/aztec-coin.png" alt="" class="coin-img">
       <div class="coin-glint"></div>
     </div>
-    <div class="aztec-coin coin-4" aria-hidden="true">
+    <div class="aztec-coin coin-4" id="aztec-coin-4" role="button" tabindex="0" aria-label="Aztec Gold Coin 4 of 5">
       <img src="assets/aztec-coin.png" alt="" class="coin-img">
       <div class="coin-glint"></div>
     </div>
-    <div class="aztec-coin coin-5" aria-hidden="true">
+    <div class="aztec-coin coin-5" id="aztec-coin-5" role="button" tabindex="0" aria-label="Aztec Gold Coin 5 of 5">
       <img src="assets/aztec-coin.png" alt="" class="coin-img">
       <div class="coin-glint"></div>
     </div>
@@ -227,6 +227,53 @@
             </div>
             <div class="parrot-title">Cotton's Parrot</div>
             <div class="parrot-desc">Cotton had his tongue cut out, so the parrot speaks for him. Click to hear him squawk!</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Break The Curse Aztec Coin Mini-Game Panel -->
+      <div class="section-box curse-box" id="curse-game-panel">
+        <div class="box-header">
+          <h3>BREAK THE CURSE</h3>
+          <span class="gold-text" style="font-size:11px;" id="curse-counter-header">AZTEC COINS: <span id="curse-count">0</span>/5</span>
+        </div>
+        <div class="box-content curse-content">
+          <div class="chest-container" id="treasure-chest-container">
+            <!-- Web-native SVG Treasure Chest -->
+            <svg class="treasure-chest-svg" id="treasure-chest-svg" viewBox="0 0 100 80" width="90" height="72" aria-hidden="true">
+              <!-- Chest Shadow -->
+              <ellipse cx="50" cy="74" rx="40" ry="5" fill="rgba(0,0,0,0.5)" />
+              <!-- Base Body -->
+              <rect x="15" y="32" width="70" height="38" rx="4" fill="#4a2e16" stroke="#2a1607" stroke-width="2"/>
+              <rect x="18" y="35" width="64" height="32" fill="#5c3a1d"/>
+              <!-- Wood Grain Lines -->
+              <line x1="18" y1="45" x2="82" y2="45" stroke="#3d220c" stroke-width="1.5"/>
+              <line x1="18" y1="56" x2="82" y2="56" stroke="#3d220c" stroke-width="1.5"/>
+              <!-- Iron Bands -->
+              <rect x="25" y="32" width="8" height="38" fill="#7a6349" stroke="#3a2a1a" stroke-width="1"/>
+              <rect x="67" y="32" width="8" height="38" fill="#7a6349" stroke="#3a2a1a" stroke-width="1"/>
+              <!-- Metallic Rivets -->
+              <circle cx="29" cy="38" r="1.5" fill="#d4af37"/>
+              <circle cx="29" cy="51" r="1.5" fill="#d4af37"/>
+              <circle cx="29" cy="64" r="1.5" fill="#d4af37"/>
+              <circle cx="71" cy="38" r="1.5" fill="#d4af37"/>
+              <circle cx="71" cy="51" r="1.5" fill="#d4af37"/>
+              <circle cx="71" cy="64" r="1.5" fill="#d4af37"/>
+              <!-- Chest Lid -->
+              <path d="M 12,32 Q 50,10 88,32 Z" fill="#6e4623" stroke="#2a1607" stroke-width="2"/>
+              <path d="M 15,31 Q 50,13 85,31 Z" fill="#87562c"/>
+              <!-- Lid Iron Rim & Trim -->
+              <path d="M 25,31 Q 50,13 75,31" fill="none" stroke="#7a6349" stroke-width="3"/>
+              <!-- Center Keyhole Lock -->
+              <rect x="44" y="34" width="12" height="15" rx="2" fill="#d4af37" stroke="#5c4308" stroke-width="1.5"/>
+              <circle cx="50" cy="39" r="2.5" fill="#1e130a"/>
+              <polygon points="49,40 51,40 52,46 48,46" fill="#1e130a"/>
+            </svg>
+            <div class="chest-glow-ring" id="chest-glow-ring"></div>
+            <div class="sparkles-container" id="sparkles-container"></div>
+          </div>
+          <div class="curse-status" id="curse-status">
+            Collect all 5 Aztec gold coins scattered along the page margins to return them to the chest!
           </div>
         </div>
       </div>
