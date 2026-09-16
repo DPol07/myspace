@@ -1000,25 +1000,160 @@ a:hover {
 }
 
 /* ==========================================================================
-   Aztec Gold Coins - Ambient Floating Effect
+   Break The Curse Mini-Game Panel & Aztec Gold Coins
    ========================================================================== */
-.aztec-coins-container {
-  position: fixed;
+.curse-box {
+  margin-top: 16px;
+}
+
+.curse-content {
+  text-align: center;
+  padding: 16px 12px;
+}
+
+.chest-container {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 12px;
+  cursor: default;
+}
+
+.treasure-chest-svg {
+  display: block;
+  margin: 0 auto;
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+}
+
+.chest-container.shake .treasure-chest-svg {
+  animation: chest-shake-anim 0.4s ease-in-out;
+}
+
+.chest-glow-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 110px;
+  height: 110px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.6) 0%, rgba(212, 175, 55, 0) 70%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.chest-container.shake .chest-glow-ring {
+  opacity: 1;
+}
+
+.chest-container.victory .chest-glow-ring {
+  opacity: 1;
+  animation: victory-glow-pulse 2s ease-in-out infinite alternate;
+}
+
+.sparkles-container {
+  position: absolute;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  z-index: 1;
-  overflow: hidden;
+  overflow: visible;
+}
+
+.gold-sparkle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #ffd700;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #ffd700, 0 0 14px #ffaa00;
+  animation: sparkle-fly 1.2s ease-out forwards;
+}
+
+@keyframes sparkle-fly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(0);
+  }
+}
+
+@keyframes chest-shake-anim {
+  0% { transform: scale(1) rotate(0deg); }
+  20% { transform: scale(1.1) rotate(-6deg); }
+  40% { transform: scale(1.1) rotate(6deg); }
+  60% { transform: scale(1.08) rotate(-4deg); }
+  80% { transform: scale(1.04) rotate(2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes victory-glow-pulse {
+  0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.6; }
+  100% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+}
+
+.curse-status {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  background: rgba(18, 12, 8, 0.7);
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+}
+
+.curse-victory-header {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffe680;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7), 0 2px 4px rgba(0, 0, 0, 0.9);
+  margin-bottom: 6px;
+}
+
+.curse-victory-msg {
+  font-style: italic;
+  color: var(--text-gold);
+}
+
+/* ==========================================================================
+   Aztec Gold Coins - Ambient Floating & Interactive Mini-Game
+   ========================================================================== */
+.aztec-coins-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 99;
+  overflow: visible;
 }
 
 .aztec-coin {
   position: absolute;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.75));
-  opacity: 0.82;
+  opacity: 0.88;
   will-change: transform;
+  transition: filter 0.25s ease, opacity 0.25s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.aztec-coin:hover {
+  filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.9)) drop-shadow(0 6px 14px rgba(0, 0, 0, 0.75));
+  opacity: 1;
+}
+
+.aztec-coin:hover .coin-img {
+  transform: scale(1.08) rotate(6deg);
 }
 
 .coin-img {
@@ -1026,46 +1161,70 @@ a:hover {
   height: 100%;
   display: block;
   object-fit: contain;
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Individual Coin Positions & Sizes */
+.aztec-coin.collected {
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Flying Coin Clone for Animation */
+.flying-aztec-coin {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.95));
+  transition: transform 0.65s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.65s ease;
+  will-change: transform, opacity;
+}
+
+.flying-aztec-coin img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+/* Individual Coin Positions & Natural Page Distribution */
 .coin-1 {
-  top: 14%;
-  left: 2.5%;
-  width: 58px;
-  height: 58px;
+  top: 320px;
+  left: 3%;
+  width: 62px;
+  height: 62px;
   animation: float-coin-1 15s ease-in-out infinite;
 }
 
 .coin-2 {
-  top: 36%;
-  right: 2.8%;
-  width: 66px;
-  height: 66px;
+  top: 950px;
+  right: 3.5%;
+  width: 68px;
+  height: 68px;
   animation: float-coin-2 19s ease-in-out infinite;
 }
 
 .coin-3 {
-  top: 64%;
-  left: 3%;
-  width: 52px;
-  height: 52px;
+  top: 1600px;
+  left: 3.5%;
+  width: 58px;
+  height: 58px;
   animation: float-coin-3 17s ease-in-out infinite;
 }
 
 .coin-4 {
-  top: 83%;
-  right: 3.2%;
-  width: 60px;
-  height: 60px;
+  top: 2200px;
+  right: 3.5%;
+  width: 64px;
+  height: 64px;
   animation: float-coin-4 16s ease-in-out infinite;
 }
 
 .coin-5 {
-  top: 20%;
-  right: 7%;
-  width: 44px;
-  height: 44px;
+  top: 2750px;
+  left: 4%;
+  width: 54px;
+  height: 54px;
   animation: float-coin-5 14s ease-in-out infinite;
 }
 
