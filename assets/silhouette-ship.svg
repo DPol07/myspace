@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Black Pearl Silhouette -->
+  <g fill="#2b2015">
+    <!-- Hull -->
+    <path d="M15 145 C 35 145, 45 160, 95 160 C 145 160, 175 145, 185 130 C 170 140, 130 148, 90 148 C 50 148, 25 142, 15 145 Z"/>
+    <path d="M185 130 L195 110 L180 120 L170 140 Z"/>
+    <path d="M15 145 L8 125 L25 135 Z"/>
+    <!-- Masts -->
+    <rect x="50" y="50" width="4" height="95" rx="1"/>
+    <rect x="95" y="35" width="5" height="110" rx="1"/>
+    <rect x="145" y="60" width="4" height="85" rx="1"/>
+    <!-- Bowsprit -->
+    <polygon points="15,140 0,115 18,138"/>
+    <!-- Sails (Black Pearl ragged sails) -->
+    <!-- Fore mast sails -->
+    <path d="M52 55 Q 30 70 52 85 Q 40 70 52 55 Z"/>
+    <path d="M52 90 Q 25 110 52 130 Q 35 110 52 90 Z"/>
+    <!-- Main mast sails -->
+    <path d="M97 40 Q 65 60 97 80 Q 78 60 97 40 Z"/>
+    <path d="M97 85 Q 60 110 97 135 Q 75 110 97 85 Z"/>
+    <!-- Mizzen mast sails -->
+    <path d="M147 65 Q 125 80 147 100 Q 133 80 147 65 Z"/>
+    <path d="M147 105 Q 120 120 147 138 Q 130 120 147 105 Z"/>
+    <!-- Flags / Tattered streamers -->
+    <path d="M97 35 Q 110 32 120 36 L 97 40 Z"/>
+    <path d="M52 50 Q 62 48 70 52 L 52 55 Z"/>
+  </g>
+</svg>

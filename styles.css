@@ -1424,6 +1424,91 @@ a:hover {
   }
 }
 
+/* ==========================================================================
+   Faint Pirate-Themed Background Silhouettes
+   ========================================================================== */
+.background-silhouettes-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.bg-silhouette {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.08;
+  filter: sepia(0.6) hue-rotate(-20deg) brightness(0.8);
+  mix-blend-mode: overlay;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Asymmetrical Scatter & Sizing across Side Margins */
+.sil-ship {
+  top: 160px;
+  left: calc(50% - 780px);
+  width: 360px;
+  height: 360px;
+  transform: rotate(-6deg);
+}
+
+.sil-map {
+  top: 480px;
+  left: calc(50% + 550px);
+  width: 290px;
+  height: 290px;
+  transform: rotate(14deg);
+}
+
+.sil-dice {
+  top: 1020px;
+  left: calc(50% - 690px);
+  width: 200px;
+  height: 200px;
+  transform: rotate(-15deg);
+}
+
+.sil-anchor {
+  top: 1320px;
+  left: calc(50% + 570px);
+  width: 270px;
+  height: 270px;
+  transform: rotate(8deg);
+}
+
+.sil-rigging {
+  top: 1880px;
+  left: calc(50% - 750px);
+  width: 320px;
+  height: 320px;
+  transform: rotate(4deg);
+}
+
+.sil-kraken {
+  top: 2220px;
+  left: calc(50% + 530px);
+  width: 330px;
+  height: 330px;
+  transform: rotate(-12deg);
+}
+
+@media (max-width: 1400px) {
+  .bg-silhouette {
+    opacity: 0.05;
+  }
+}
+
+@media (max-width: 1100px) {
+  .background-silhouettes-container {
+    display: none;
+  }
+}
+
 /* Footer */
 .myspace-footer {
   max-width: 1080px;
