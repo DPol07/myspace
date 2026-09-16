@@ -395,11 +395,70 @@ function escapeHtml(text) {
 }
 
 /* ==========================================================================
+   Custom Pirate Hook Cursor Logic
+   ========================================================================== */
+function initCustomHookCursor() {
+  const cursor = document.getElementById('custom-pirate-cursor');
+  const spark = document.getElementById('hook-click-spark');
+  if (!cursor) return;
+
+  // Offset so tip of hook inside 58x76px image (x:6px, y:5px) matches mouse pointer precisely
+  const tipOffsetX = 6;
+  const tipOffsetY = 5;
+
+  let mouseX = -100;
+  let mouseY = -100;
+  let isVisible = false;
+
+  document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+
+    if (!isVisible) {
+      isVisible = true;
+      cursor.style.opacity = '1';
+    }
+
+    cursor.style.transform = `translate3d(${mouseX - tipOffsetX}px, ${mouseY - tipOffsetY}px, 0)`;
+
+    // Check if target or parent is an interactive element for hover effect
+    const target = e.target;
+    if (target) {
+      const isInteractive = target.closest('a, button, input, textarea, select, [role="button"], .aztec-coin, .trinket-card, .parrot-card, .contact-btn, .player-btn, .progress-bar-bg, .post-comment-btn');
+      if (isInteractive) {
+        cursor.classList.add('hovering');
+      } else {
+        cursor.classList.remove('hovering');
+      }
+    }
+  });
+
+  document.addEventListener('mouseleave', () => {
+    isVisible = false;
+    cursor.style.opacity = '0';
+  });
+
+  document.addEventListener('mouseenter', () => {
+    isVisible = true;
+    cursor.style.opacity = '1';
+  });
+
+  document.addEventListener('mousedown', () => {
+    if (spark) {
+      spark.classList.remove('spark-anim');
+      void spark.offsetWidth; // Force reflow
+      spark.classList.add('spark-anim');
+    }
+  });
+}
+
+/* ==========================================================================
    Break The Curse Mini-Game Logic
    ========================================================================== */
 let collectedCoinsCount = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
+  initCustomHookCursor();
   initCurseMiniGame();
 });
 

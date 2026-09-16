@@ -27,6 +27,75 @@
   --shadow-glow: 0 0 20px rgba(212, 175, 55, 0.15);
 }
 
+/* Custom Pirate Hook Cursor */
+html, body, *, a, button, input, textarea, select, [role="button"] {
+  cursor: none !important;
+}
+
+.custom-hook-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 58px;
+  height: 76px;
+  pointer-events: none;
+  z-index: 100000;
+  will-change: transform;
+  transform: translate3d(-6px, -5px, 0); /* Offset so tip (x:6, y:5) aligns with pointer (0,0) */
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.hook-cursor-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.75));
+  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.15s ease;
+  transform-origin: 10% 7%; /* Pivot near the tip */
+}
+
+/* Hovering interactive elements */
+.custom-hook-cursor.hovering .hook-cursor-img {
+  transform: scale(1.15) rotate(-6deg);
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.8)) drop-shadow(0 6px 12px rgba(0, 0, 0, 0.85));
+}
+
+/* Metallic Click Spark/Glint Effect */
+.hook-spark {
+  position: absolute;
+  top: 5px;
+  left: 6px;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  margin-left: -8px;
+  pointer-events: none;
+  opacity: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,215,0,0.9) 35%, rgba(212,175,55,0) 70%);
+  box-shadow: 0 0 12px #ffffff, 0 0 20px #ffd700;
+}
+
+.hook-spark.spark-anim {
+  animation: metallic-spark-flash 0.35s ease-out forwards;
+}
+
+@keyframes metallic-spark-flash {
+  0% {
+    opacity: 1;
+    transform: scale(0.2) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.6) rotate(45deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.4) rotate(90deg);
+  }
+}
+
 /* Global Reset & Base Styling */
 * {
   box-sizing: border-box;
