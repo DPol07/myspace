@@ -432,26 +432,33 @@ function handleCoinClick(coin, event) {
   const coinRect = coin.getBoundingClientRect();
   const chestRect = chestSvg.getBoundingClientRect();
 
-  // Target coordinates: center of chest
-  const targetX = chestRect.left + chestRect.width / 2 - coinRect.width / 2;
-  const targetY = chestRect.top + chestRect.height / 2 - coinRect.height / 2;
+  // Scroll offset at the moment of calculation
+  const scrollX = window.scrollX || window.pageXOffset || 0;
+  const scrollY = window.scrollY || window.pageYOffset || 0;
 
-  // Create flying coin clone for smooth fixed viewport animation
+  // Absolute page coordinates for coin and chest center
+  const coinPageLeft = coinRect.left + scrollX;
+  const coinPageTop = coinRect.top + scrollY;
+
+  const targetX = (chestRect.left + scrollX) + chestRect.width / 2 - coinRect.width / 2;
+  const targetY = (chestRect.top + scrollY) + chestRect.height / 2 - coinRect.height / 2;
+
+  // Create flying coin clone using absolute page positioning so scrolling won't affect destination
   const flyCoin = document.createElement('div');
   flyCoin.className = 'flying-aztec-coin';
   flyCoin.innerHTML = '<img src="assets/aztec-coin.png" alt="" />';
   flyCoin.style.width = `${coinRect.width}px`;
   flyCoin.style.height = `${coinRect.height}px`;
-  flyCoin.style.left = `${coinRect.left}px`;
-  flyCoin.style.top = `${coinRect.top}px`;
+  flyCoin.style.left = `${coinPageLeft}px`;
+  flyCoin.style.top = `${coinPageTop}px`;
 
   document.body.appendChild(flyCoin);
 
   // Hide original coin in page flow
   coin.classList.add('collected');
 
-  const startX = coinRect.left;
-  const startY = coinRect.top;
+  const startX = coinPageLeft;
+  const startY = coinPageTop;
   const endX = targetX;
   const endY = targetY;
 
