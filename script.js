@@ -455,36 +455,66 @@ function handleCoinClick(coin, event) {
   const endX = targetX;
   const endY = targetY;
 
-  // Calculate arc curve (lift higher in viewport for a cinematic parabolic arc)
-  const midX = (startX + endX) / 2 + (startX < endX ? -30 : 30);
-  const midY = Math.min(startY, endY) - 130;
+  const flightDuration = 2400; // 2.4s slow, cinematic flight
 
-  const flightDuration = 1300; // 1.3s cinematic journey
+  // Generate smooth, flowing wave keyframes (Bezier curve with subtle wave)
+  const keyframes = [];
+  const steps = 20;
 
-  // Smooth Web Animations API arced flight
-  flyCoin.animate([
-    {
-      transform: `translate3d(0px, 0px, 0) scale(1) rotate(0deg)`,
-      opacity: 1
-    },
-    {
-      transform: `translate3d(${midX - startX}px, ${midY - startY}px, 0) scale(0.85) rotate(320deg)`,
-      opacity: 1,
-      offset: 0.5
-    },
-    {
-      transform: `translate3d(${endX - startX}px, ${endY - startY}px, 0) scale(0.38) rotate(720deg)`,
-      opacity: 1,
-      offset: 0.92
-    },
-    {
-      transform: `translate3d(${endX - startX}px, ${endY - startY}px, 0) scale(0.15) rotate(750deg)`,
-      opacity: 0,
-      offset: 1
-    }
-  ], {
+  // Horizontal displacement direction for subtle wave curvature
+  const waveAmp = (startX < endX ? 40 : -40);
+
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+
+    // Cubic Bezier path calculation for smooth curve
+    // Control points lift upwards and create a flowing path toward the chest
+    const p0X = startX;
+    const p0Y = startY;
+
+    const p1X = startX + (endX - startX) * 0.25 + waveAmp;
+    const p1Y = startY - 120; // gentle upward float
+
+    const p2X = startX + (endX - startX) * 0.75 - waveAmp * 0.5;
+    const p2Y = Math.min(startY, endY) - 60;
+
+    const p3X = endX;
+    const p3Y = endY;
+
+    // Bezier formula
+    const currentX = Math.pow(1 - t, 3) * p0X +
+                     3 * Math.pow(1 - t, 2) * t * p1X +
+                     3 * (1 - t) * Math.pow(t, 2) * p2X +
+                     Math.pow(t, 3) * p3X;
+
+    const currentY = Math.pow(1 - t, 3) * p0Y +
+                     3 * Math.pow(1 - t, 2) * t * p1Y +
+                     3 * (1 - t) * Math.pow(t, 2) * p2Y +
+                     Math.pow(t, 3) * p3Y;
+
+    const dx = currentX - startX;
+    const dy = currentY - startY;
+
+    // Scale down smoothly as it approaches the chest (1.0 -> 0.3)
+    const scale = 1 - t * 0.7;
+
+    // Gentle rotation over time (0deg -> 480deg)
+    const rotation = t * 480;
+
+    // Opacity remains 1.0 until the very last 5% settling moment
+    const opacity = t > 0.95 ? (1 - (t - 0.95) / 0.05) : 1;
+
+    keyframes.push({
+      transform: `translate3d(${dx.toFixed(2)}px, ${dy.toFixed(2)}px, 0) scale(${scale.toFixed(3)}) rotate(${rotation.toFixed(1)}deg)`,
+      opacity: opacity,
+      offset: t
+    });
+  }
+
+  // Smooth Web Animations API flight
+  flyCoin.animate(keyframes, {
     duration: flightDuration,
-    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+    easing: 'cubic-bezier(0.42, 0, 0.58, 1)', // Smooth ease-in-out
     fill: 'forwards'
   });
 
