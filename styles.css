@@ -153,6 +153,8 @@ a:hover {
   padding: 0 16px;
   display: flex;
   gap: 28px;
+  position: relative;
+  z-index: 10;
 }
 
 /* Columns */
@@ -1131,7 +1133,7 @@ a:hover {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 99;
+  z-index: 5;
   overflow: visible;
 }
 
@@ -1188,41 +1190,46 @@ a:hover {
 }
 
 /* Individual Coin Positions & Natural Page Distribution */
+/* Coin 1: Easy/Moderate - Tucked behind right edge of Profile Photo Card into center gap */
 .coin-1 {
-  top: 320px;
-  left: 3%;
+  top: 290px;
+  left: calc(50% - 130px);
   width: 62px;
   height: 62px;
   animation: float-coin-1 15s ease-in-out infinite;
 }
 
+/* Coin 2: Hidden - Tucked underneath bottom-left corner of Black Pearl Ship Box */
 .coin-2 {
-  top: 950px;
-  right: 3.5%;
+  top: 1165px;
+  left: calc(50% - 35px);
   width: 68px;
   height: 68px;
   animation: float-coin-2 19s ease-in-out infinite;
 }
 
+/* Coin 3: Hidden - Tucked behind outer-left edge of Top Friends box into left margin */
 .coin-3 {
-  top: 1600px;
-  left: 3.5%;
+  top: 1680px;
+  left: calc(50% - 565px);
   width: 58px;
   height: 58px;
   animation: float-coin-3 17s ease-in-out infinite;
 }
 
+/* Coin 4: Moderate - Tucked behind top-right edge of Captain's Trinkets box */
 .coin-4 {
-  top: 2200px;
-  right: 3.5%;
+  top: 1515px;
+  left: calc(50% - -505px);
   width: 64px;
   height: 64px;
   animation: float-coin-4 16s ease-in-out infinite;
 }
 
+/* Coin 5: Very Hidden - Tucked behind bottom-left edge of Davy Jones comment card */
 .coin-5 {
-  top: 2750px;
-  left: 4%;
+  top: 2510px;
+  left: calc(50% - -15px);
   width: 54px;
   height: 54px;
   animation: float-coin-5 14s ease-in-out infinite;
