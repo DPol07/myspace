@@ -155,6 +155,21 @@ a:hover {
   gap: 28px;
   position: relative;
   z-index: 10;
+  pointer-events: none;
+}
+
+.left-column,
+.right-column {
+  pointer-events: none;
+}
+
+.section-box,
+.profile-pic-card,
+.profile-title-box,
+.network-banner {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
 }
 
 /* Columns */
@@ -1190,48 +1205,48 @@ a:hover {
 }
 
 /* Individual Coin Positions & Natural Page Distribution */
-/* Coin 1: Easy/Moderate - Tucked behind right edge of Profile Photo Card into center gap */
+/* Coin 1: Easy/Moderate - Floating in center gap between columns near top */
 .coin-1 {
-  top: 290px;
-  left: calc(50% - 130px);
+  top: 280px;
+  left: calc(50% - 142px);
   width: 62px;
   height: 62px;
   animation: float-coin-1 15s ease-in-out infinite;
 }
 
-/* Coin 2: Hidden - Tucked underneath bottom-left corner of Black Pearl Ship Box */
+/* Coin 2: Hidden - Tucked under bottom-left corner of Black Pearl Ship Box, half poking into center gap */
 .coin-2 {
-  top: 1165px;
-  left: calc(50% - 35px);
-  width: 68px;
-  height: 68px;
+  top: 1160px;
+  left: calc(50% - 160px);
+  width: 66px;
+  height: 66px;
   animation: float-coin-2 19s ease-in-out infinite;
 }
 
-/* Coin 3: Hidden - Tucked behind outer-left edge of Top Friends box into left margin */
+/* Coin 3: Hidden - Tucked behind outer-left edge of Top Friends box, half poking into left margin */
 .coin-3 {
   top: 1680px;
   left: calc(50% - 565px);
-  width: 58px;
-  height: 58px;
+  width: 60px;
+  height: 60px;
   animation: float-coin-3 17s ease-in-out infinite;
 }
 
-/* Coin 4: Moderate - Tucked behind top-right edge of Captain's Trinkets box */
+/* Coin 4: Moderate - Tucked behind top-right edge of Captain's Trinkets box, half poking into right margin */
 .coin-4 {
-  top: 1515px;
-  left: calc(50% - -505px);
+  top: 1510px;
+  left: calc(50% + 505px);
   width: 64px;
   height: 64px;
   animation: float-coin-4 16s ease-in-out infinite;
 }
 
-/* Coin 5: Very Hidden - Tucked behind bottom-left edge of Davy Jones comment card */
+/* Coin 5: Hidden - Tucked behind bottom-right edge of Comments box, half poking into right margin */
 .coin-5 {
-  top: 2510px;
-  left: calc(50% - -15px);
-  width: 54px;
-  height: 54px;
+  top: 2420px;
+  left: calc(50% + 505px);
+  width: 58px;
+  height: 58px;
   animation: float-coin-5 14s ease-in-out infinite;
 }
 
@@ -1329,10 +1344,7 @@ a:hover {
 
 @media (max-width: 1200px) {
   .aztec-coin {
-    opacity: 0.55;
-  }
-  .coin-5 {
-    display: none;
+    opacity: 0.75;
   }
 }
 
