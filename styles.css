@@ -36,12 +36,12 @@ html, body, *, a, button, input, textarea, select, [role="button"] {
   position: fixed;
   top: 0;
   left: 0;
-  width: 58px;
-  height: 76px;
+  width: 48px;
+  height: 63px;
   pointer-events: none;
   z-index: 100000;
   will-change: transform;
-  transform: translate3d(-6px, -5px, 0); /* Offset so tip (x:6, y:5) aligns with pointer (0,0) */
+  transform: translate3d(-5px, -4px, 0); /* Offset so tip (x:5, y:4) aligns with pointer (0,0) */
   transition: opacity 0.2s ease, filter 0.2s ease;
 }
 
@@ -64,12 +64,12 @@ html, body, *, a, button, input, textarea, select, [role="button"] {
 /* Metallic Click Spark/Glint Effect */
 .hook-spark {
   position: absolute;
-  top: 5px;
-  left: 6px;
-  width: 16px;
-  height: 16px;
-  margin-top: -8px;
-  margin-left: -8px;
+  top: 4px;
+  left: 5px;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  margin-left: -7px;
   pointer-events: none;
   opacity: 0;
   border-radius: 50%;

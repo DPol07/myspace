@@ -402,9 +402,9 @@ function initCustomHookCursor() {
   const spark = document.getElementById('hook-click-spark');
   if (!cursor) return;
 
-  // Offset so tip of hook inside 58x76px image (x:6px, y:5px) matches mouse pointer precisely
-  const tipOffsetX = 6;
-  const tipOffsetY = 5;
+  // Offset so tip of hook inside 48x63px image (x:5px, y:4px) matches mouse pointer precisely
+  const tipOffsetX = 5;
+  const tipOffsetY = 4;
 
   let mouseX = -100;
   let mouseY = -100;
