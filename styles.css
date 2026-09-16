@@ -1175,9 +1175,9 @@ a:hover {
   position: fixed;
   pointer-events: none;
   z-index: 9999;
-  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.95));
-  transition: transform 0.65s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.65s ease;
-  will-change: transform, opacity;
+  filter: drop-shadow(0 0 22px rgba(255, 215, 0, 0.95)) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.8));
+  opacity: 1;
+  will-change: transform, left, top;
 }
 
 .flying-aztec-coin img {
