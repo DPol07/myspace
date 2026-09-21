@@ -453,6 +453,162 @@ function initCustomHookCursor() {
 }
 
 /* ==========================================================================
+   Ambient Background Floating Dust/Gold Particles Engine
+   ========================================================================== */
+function initAmbientParticles() {
+  const canvas = document.getElementById('ambient-particles-canvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  let width = 0;
+  let height = 0;
+  let particles = [];
+  const PARTICLE_COUNT = 42; // Small count floating through full page
+
+  // Palette definition: ~80% muted warm bronze/gold, ~20% soft neutral dust
+  const goldColors = [
+    { r: 212, g: 175, b: 55 },   // Classic Aztec Gold
+    { r: 229, g: 193, b: 88 },   // Warm Bright Gold
+    { r: 180, g: 140, b: 60 },   // Aged Deep Bronze
+    { r: 217, g: 150, b: 60 }    // Warm Amber Bronze
+  ];
+
+  const dustColors = [
+    { r: 166, g: 152, b: 136 },  // Muted Ash Dust
+    { r: 200, g: 190, b: 174 },  // Soft Parchment Dust
+    { r: 175, g: 165, b: 150 }   // Pale Earth Dust
+  ];
+
+  function resizeCanvas() {
+    // Measure full scrollable document height and viewport width
+    width = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+    height = Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight,
+      document.body.offsetHeight,
+      document.documentElement.offsetHeight,
+      document.body.clientHeight,
+      document.documentElement.clientHeight
+    );
+
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  function createParticle(isInitial = false) {
+    const isGold = Math.random() < 0.8; // 80% gold/bronze, 20% dust
+    const colorList = isGold ? goldColors : dustColors;
+    const color = colorList[Math.floor(Math.random() * colorList.length)];
+
+    // Sizes: mostly 1-2px diameter (radius 0.5 - 1.0), with a few up to 3px (radius 1.5)
+    const randSize = Math.random();
+    let radius = 0.6;
+    if (randSize > 0.85) {
+      radius = 1.4 + Math.random() * 0.2; // ~3px diameter
+    } else if (randSize > 0.4) {
+      radius = 0.9 + Math.random() * 0.3; // ~2px diameter
+    } else {
+      radius = 0.5 + Math.random() * 0.3; // ~1px diameter
+    }
+
+    // Peak opacity between 0.35 and 0.70 for soft yet noticeable presence
+    const maxOpacity = 0.35 + Math.random() * 0.35;
+
+    return {
+      x: Math.random() * (width || window.innerWidth),
+      y: isInitial ? Math.random() * (height || window.innerHeight) : (Math.random() < 0.5 ? -10 : height + 10),
+      radius: radius,
+      color: color,
+      maxOpacity: maxOpacity,
+      // Independent sine wave fade in / out cycle
+      fadePhase: Math.random() * Math.PI * 2,
+      fadeSpeed: 0.005 + Math.random() * 0.008,
+      // Slow drift movement (vertical float + subtle horizontal wave drift)
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: -0.12 - Math.random() * 0.22, // Slow upward ambient drift
+      wobblePhase: Math.random() * Math.PI * 2,
+      wobbleSpeed: 0.01 + Math.random() * 0.015,
+      wobbleAmp: 0.15 + Math.random() * 0.25
+    };
+  }
+
+  function initParticleList() {
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push(createParticle(true));
+    }
+  }
+
+  function updateAndDrawParticles() {
+    ctx.clearRect(0, 0, width, height);
+
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+
+      // Update positions
+      p.wobblePhase += p.wobbleSpeed;
+      p.fadePhase += p.fadeSpeed;
+
+      p.x += p.vx + Math.sin(p.wobblePhase) * p.wobbleAmp;
+      p.y += p.vy;
+
+      // Calculate current opacity (smooth sine wave fade in and out)
+      // Oscillates smoothly between 0 and p.maxOpacity
+      const alpha = Math.max(0, p.maxOpacity * (0.5 + 0.5 * Math.sin(p.fadePhase)));
+
+      // Wrap around bounds seamlessly across full document canvas
+      if (p.y < -15) {
+        p.y = height + 10;
+        p.x = Math.random() * width;
+      } else if (p.y > height + 15) {
+        p.y = -10;
+        p.x = Math.random() * width;
+      }
+
+      if (p.x < -15) {
+        p.x = width + 10;
+      } else if (p.x > width + 15) {
+        p.x = -10;
+      }
+
+      // Render particle with soft radial gradient for a smooth, natural dust look
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha.toFixed(3)})`;
+      ctx.shadowColor = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${(alpha * 0.6).toFixed(3)})`;
+      ctx.shadowBlur = p.radius > 1.2 ? 3 : 1.5;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    requestAnimationFrame(updateAndDrawParticles);
+  }
+
+  // Initialize canvas size and particle array
+  resizeCanvas();
+  initParticleList();
+
+  // Listen for window resize and DOM height changes to keep canvas aligned
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+  });
+
+  // Observe page height changes (e.g. when comments are added)
+  if (window.ResizeObserver) {
+    const resizeObserver = new ResizeObserver(() => {
+      resizeCanvas();
+    });
+    resizeObserver.observe(document.body);
+  }
+
+  // Start animation loop
+  requestAnimationFrame(updateAndDrawParticles);
+}
+
+/* ==========================================================================
    Break The Curse Mini-Game Logic
    ========================================================================== */
 let collectedCoinsCount = 0;
@@ -460,6 +616,7 @@ let collectedCoinsCount = 0;
 document.addEventListener('DOMContentLoaded', () => {
   initCustomHookCursor();
   initCurseMiniGame();
+  initAmbientParticles();
 });
 
 function initCurseMiniGame() {
