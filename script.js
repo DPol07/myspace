@@ -543,7 +543,7 @@ function seaGameLoop() {
     }
   }
 
-  // 4. Update Rocks & Collision with Player
+  // 4. Update Rocks, Barrels & Islands Collision with Player
   for (let i = rocks.length - 1; i >= 0; i--) {
     const r = rocks[i];
     r.y += r.speed;
@@ -563,6 +563,40 @@ function seaGameLoop() {
 
     if (r.y > seaCanvas.height + 30) {
       rocks.splice(i, 1);
+    }
+  }
+
+  // Barrels Collision (Obstacles costing 1 life)
+  for (let i = barrels.length - 1; i >= 0; i--) {
+    const b = barrels[i];
+    if (playerShip.invulnerableTimer === 0 && checkAABBCollision(playerShip, b)) {
+      seaLives--;
+      updateSeaHUD();
+      playerShip.invulnerableTimer = 60;
+      createExplosion(b.x + b.width / 2, b.y + b.height / 2);
+      barrels.splice(i, 1);
+
+      if (seaLives <= 0) {
+        triggerSeaGameOver("Collided with floating explosive wreckage!");
+        return;
+      }
+      continue;
+    }
+  }
+
+  // Islands Collision (Obstacles costing 1 life)
+  for (let i = islands.length - 1; i >= 0; i--) {
+    const isl = islands[i];
+    if (playerShip.invulnerableTimer === 0 && checkAABBCollision(playerShip, isl)) {
+      seaLives--;
+      updateSeaHUD();
+      playerShip.invulnerableTimer = 60;
+      createExplosion(playerShip.x + playerShip.width / 2, playerShip.y + playerShip.height / 2);
+
+      if (seaLives <= 0) {
+        triggerSeaGameOver("Ran aground on a tropical island!");
+        return;
+      }
     }
   }
 
@@ -721,34 +755,59 @@ function drawSeaBattleFrame() {
   // 1. Animated Ocean Sea Background
   drawOceanBackground(w, h);
 
-  // 2. Draw Decorative Small Islands
+  // 2. Draw Small Tropical Islands with Realistic Palm Tree
   islands.forEach(isl => {
+    const cx = isl.x + isl.width / 2;
+    const cy = isl.y + isl.height / 2;
+
     // Shore / Sand Base
-    seaCtx.fillStyle = '#e0c280';
+    seaCtx.fillStyle = '#e2c687';
     seaCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-    seaCtx.lineWidth = 2;
+    seaCtx.lineWidth = 1.5;
     seaCtx.beginPath();
-    seaCtx.ellipse(isl.x + isl.width / 2, isl.y + isl.height / 2, isl.width / 2, isl.height / 2, 0, 0, Math.PI * 2);
+    seaCtx.ellipse(cx, cy, isl.width / 2, isl.height / 2, 0, 0, Math.PI * 2);
     seaCtx.fill();
     seaCtx.stroke();
 
-    // Tropical Foliage Center
-    seaCtx.fillStyle = '#2d7a3a';
+    // Inner Grass Base
+    seaCtx.fillStyle = '#3a8342';
     seaCtx.beginPath();
-    seaCtx.ellipse(isl.x + isl.width / 2, isl.y + isl.height / 2 - 2, isl.width * 0.35, isl.height * 0.35, 0, 0, Math.PI * 2);
+    seaCtx.ellipse(cx - 2, cy + 2, isl.width * 0.3, isl.height * 0.28, 0, 0, Math.PI * 2);
     seaCtx.fill();
 
-    // Palm Fronds Detail
-    seaCtx.strokeStyle = '#1e5e29';
-    seaCtx.lineWidth = 1.5;
-    const cx = isl.x + isl.width / 2;
-    const cy = isl.y + isl.height / 2 - 2;
-    for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
+    // Palm Tree Trunk (Curved Brown)
+    seaCtx.strokeStyle = '#6e4722';
+    seaCtx.lineWidth = 3;
+    seaCtx.beginPath();
+    seaCtx.moveTo(cx - 3, cy + 5);
+    seaCtx.quadraticCurveTo(cx - 7, cy - 3, cx - 2, cy - 12);
+    seaCtx.stroke();
+
+    // Palm Tree Fronds (Arching Green Leaves)
+    const topX = cx - 2;
+    const topY = cy - 12;
+
+    seaCtx.strokeStyle = '#1b6326';
+    seaCtx.fillStyle = '#228b22';
+    seaCtx.lineWidth = 1.8;
+
+    const frondAngles = [-2.4, -1.6, -0.8, -0.2, 0.6];
+    frondAngles.forEach(angle => {
+      const leafX = topX + Math.cos(angle) * 14;
+      const leafY = topY + Math.sin(angle) * 12;
+
       seaCtx.beginPath();
-      seaCtx.moveTo(cx, cy);
-      seaCtx.lineTo(cx + Math.cos(a) * 12, cy + Math.sin(a) * 12);
+      seaCtx.moveTo(topX, topY);
+      seaCtx.quadraticCurveTo(topX + Math.cos(angle) * 8, topY + Math.sin(angle) * 8 - 3, leafX, leafY);
       seaCtx.stroke();
-    }
+    });
+
+    // Coconuts
+    seaCtx.fillStyle = '#4a2d11';
+    seaCtx.beginPath();
+    seaCtx.arc(topX - 1, topY + 2, 1.8, 0, Math.PI * 2);
+    seaCtx.arc(topX + 2, topY + 2, 1.5, 0, Math.PI * 2);
+    seaCtx.fill();
   });
 
   // 3. Draw Decorative Floating Barrels
