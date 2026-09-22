@@ -465,21 +465,23 @@ function initAmbientParticles() {
   let width = 0;
   let height = 0;
   let particles = [];
-  const PARTICLE_COUNT = 2000; // Dramatically increased particle count (~10x) for massive atmospheric density
+  const PARTICLE_COUNT = 110; // Far fewer particles for a subtle, sparse ambient floating dust effect
 
   // Palette definition: ~80% warm bronze/gold, ~20% soft neutral dust
   const goldColors = [
-    { r: 245, g: 205, b: 75 },   // Classic Aztec Gold (Bright)
-    { r: 255, g: 225, b: 120 },  // Warm Radiant Gold
-    { r: 220, g: 170, b: 80 },   // Warm Deep Bronze
-    { r: 240, g: 175, b: 85 }    // Amber Bronze
+    { r: 235, g: 195, b: 70 },   // Warm Aztec Gold
+    { r: 245, g: 215, b: 110 },  // Soft Luminous Gold
+    { r: 210, g: 160, b: 75 },   // Deep Bronze
+    { r: 230, g: 170, b: 80 }    // Amber Bronze
   ];
 
   const dustColors = [
-    { r: 200, g: 188, b: 170 },  // Muted Parchment Dust
-    { r: 230, g: 220, b: 205 },  // Soft Luminous Dust
-    { r: 205, g: 195, b: 180 }   // Pale Ash Dust
+    { r: 190, g: 180, b: 165 },  // Muted Parchment Dust
+    { r: 220, g: 210, b: 195 },  // Soft Luminous Dust
+    { r: 195, g: 185, b: 170 }   // Pale Ash Dust
   ];
+
+  const shapeTypes = ['circle', 'oval', 'polygon', 'speck'];
 
   function resizeCanvas() {
     // Measure full scrollable document height and viewport width
@@ -502,36 +504,48 @@ function initAmbientParticles() {
     const colorList = isGold ? goldColors : dustColors;
     const color = colorList[Math.floor(Math.random() * colorList.length)];
 
-    // Dramatically Larger Sizes: 6px - 20px diameter (radius 3.0 - 10.0px)
-    const randSize = Math.random();
-    let radius = 4.0;
-    if (randSize > 0.80) {
-      radius = 7.0 + Math.random() * 3.0; // ~14-20px diameter
-    } else if (randSize > 0.35) {
-      radius = 5.0 + Math.random() * 2.0; // ~10-14px diameter
-    } else {
-      radius = 3.0 + Math.random() * 2.0; // ~6-10px diameter
-    }
+    // Much smaller sizes: radius 0.8px - 2.6px (tiny dust specks)
+    const radius = 0.8 + Math.random() * 1.8;
 
-    // High peak opacity between 0.60 and 0.90 for prominent visibility
-    const maxOpacity = 0.60 + Math.random() * 0.30;
+    // Soft, subtle peak opacity between 0.25 and 0.60
+    const maxOpacity = 0.25 + Math.random() * 0.35;
+
+    // Irregular shapes: circle, oval, polygon, speck
+    const shapeType = shapeTypes[Math.floor(Math.random() * shapeTypes.length)];
+    const rotation = Math.random() * Math.PI * 2;
+    const rotationSpeed = (Math.random() - 0.5) * 0.01;
+
+    // Generate irregular polygon vertices for polygon shape
+    const points = [];
+    if (shapeType === 'polygon') {
+      const numPoints = 3 + Math.floor(Math.random() * 3);
+      for (let j = 0; j < numPoints; j++) {
+        const angle = (j / numPoints) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+        const dist = radius * (0.6 + Math.random() * 0.8);
+        points.push({ x: Math.cos(angle) * dist, y: Math.sin(angle) * dist });
+      }
+    }
 
     return {
       x: Math.random() * (width || window.innerWidth),
       y: isInitial ? Math.random() * (height || window.innerHeight) : (Math.random() < 0.5 ? -10 : height + 10),
       radius: radius,
+      shapeType: shapeType,
+      rotation: rotation,
+      rotationSpeed: rotationSpeed,
+      points: points,
       color: color,
       rgbString: `rgb(${color.r}, ${color.g}, ${color.b})`,
       maxOpacity: maxOpacity,
       // Independent sine wave fade in / out cycle
       fadePhase: Math.random() * Math.PI * 2,
-      fadeSpeed: 0.006 + Math.random() * 0.010,
+      fadeSpeed: 0.005 + Math.random() * 0.008,
       // Slow drift movement (vertical float + subtle horizontal wave drift)
-      vx: (Math.random() - 0.5) * 0.30,
-      vy: -0.15 - Math.random() * 0.25, // Slow upward ambient drift
+      vx: (Math.random() - 0.5) * 0.20,
+      vy: -0.08 - Math.random() * 0.18, // Very slow upward ambient drift
       wobblePhase: Math.random() * Math.PI * 2,
-      wobbleSpeed: 0.01 + Math.random() * 0.015,
-      wobbleAmp: 0.20 + Math.random() * 0.30
+      wobbleSpeed: 0.008 + Math.random() * 0.012,
+      wobbleAmp: 0.15 + Math.random() * 0.25
     };
   }
 
@@ -542,21 +556,73 @@ function initAmbientParticles() {
     }
   }
 
+  function renderParticleShape(p) {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    if (p.shapeType !== 'circle') {
+      ctx.rotate(p.rotation);
+    }
+
+    switch (p.shapeType) {
+      case 'oval':
+        ctx.beginPath();
+        if (ctx.ellipse) {
+          ctx.ellipse(0, 0, p.radius * 1.5, p.radius * 0.7, 0, 0, Math.PI * 2);
+        } else {
+          ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+        }
+        ctx.fill();
+        break;
+
+      case 'polygon':
+        if (p.points && p.points.length > 0) {
+          ctx.beginPath();
+          for (let k = 0; k < p.points.length; k++) {
+            const pt = p.points[k];
+            if (k === 0) ctx.moveTo(pt.x, pt.y);
+            else ctx.lineTo(pt.x, pt.y);
+          }
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+
+      case 'speck':
+        ctx.beginPath();
+        ctx.rect(-p.radius * 0.7, -p.radius * 0.5, p.radius * 1.4, p.radius * 0.9);
+        ctx.fill();
+        break;
+
+      case 'circle':
+      default:
+        ctx.beginPath();
+        ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+    }
+
+    ctx.restore();
+  }
+
   function updateAndDrawParticles() {
     ctx.clearRect(0, 0, width, height);
 
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i];
 
-      // Update positions
+      // Update positions and rotations
       p.wobblePhase += p.wobbleSpeed;
       p.fadePhase += p.fadeSpeed;
+      p.rotation += p.rotationSpeed;
 
       p.x += p.vx + Math.sin(p.wobblePhase) * p.wobbleAmp;
       p.y += p.vy;
 
       // Calculate current opacity (smooth sine wave fade in and out)
-      // Oscillates smoothly between 0 and p.maxOpacity
       const alpha = Math.max(0, p.maxOpacity * (0.5 + 0.5 * Math.sin(p.fadePhase)));
 
       // Wrap around bounds seamlessly across full document canvas
@@ -574,12 +640,11 @@ function initAmbientParticles() {
         p.x = -10;
       }
 
-      // Performant particle rendering using globalAlpha and pre-formatted rgbString
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = p.rgbString;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fill();
+      if (alpha > 0.01) {
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.rgbString;
+        renderParticleShape(p);
+      }
     }
 
     requestAnimationFrame(updateAndDrawParticles);
