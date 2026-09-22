@@ -465,20 +465,20 @@ function initAmbientParticles() {
   let width = 0;
   let height = 0;
   let particles = [];
-  const PARTICLE_COUNT = 85; // Count scaled for clear visibility across full document
+  const PARTICLE_COUNT = 240; // High particle count for rich atmospheric density
 
   // Palette definition: ~80% warm bronze/gold, ~20% soft neutral dust
   const goldColors = [
-    { r: 235, g: 195, b: 65 },   // Classic Aztec Gold (Bright)
-    { r: 245, g: 215, b: 110 },  // Warm Radiant Gold
-    { r: 210, g: 160, b: 70 },   // Warm Deep Bronze
-    { r: 230, g: 165, b: 75 }    // Amber Bronze
+    { r: 245, g: 205, b: 75 },   // Classic Aztec Gold (Bright)
+    { r: 255, g: 225, b: 120 },  // Warm Radiant Gold
+    { r: 220, g: 170, b: 80 },   // Warm Deep Bronze
+    { r: 240, g: 175, b: 85 }    // Amber Bronze
   ];
 
   const dustColors = [
-    { r: 190, g: 178, b: 160 },  // Muted Parchment Dust
-    { r: 220, g: 210, b: 195 },  // Soft Luminous Dust
-    { r: 195, g: 185, b: 170 }   // Pale Ash Dust
+    { r: 200, g: 188, b: 170 },  // Muted Parchment Dust
+    { r: 230, g: 220, b: 205 },  // Soft Luminous Dust
+    { r: 205, g: 195, b: 180 }   // Pale Ash Dust
   ];
 
   function resizeCanvas() {
@@ -502,19 +502,19 @@ function initAmbientParticles() {
     const colorList = isGold ? goldColors : dustColors;
     const color = colorList[Math.floor(Math.random() * colorList.length)];
 
-    // Sizes: 2px - 5px diameter (radius 1.0 - 2.5px)
+    // Larger Sizes: 4px - 10px diameter (radius 2.0 - 5.0px)
     const randSize = Math.random();
-    let radius = 1.2;
+    let radius = 2.5;
     if (randSize > 0.80) {
-      radius = 2.0 + Math.random() * 0.5; // ~4-5px diameter
+      radius = 4.0 + Math.random() * 1.0; // ~8-10px diameter
     } else if (randSize > 0.35) {
-      radius = 1.4 + Math.random() * 0.5; // ~3-4px diameter
+      radius = 2.8 + Math.random() * 1.0; // ~5.6-7.6px diameter
     } else {
-      radius = 1.0 + Math.random() * 0.3; // ~2-2.5px diameter
+      radius = 2.0 + Math.random() * 0.7; // ~4-5.4px diameter
     }
 
-    // Peak opacity between 0.60 and 0.90 for clear visibility against dark background
-    const maxOpacity = 0.60 + Math.random() * 0.30;
+    // High peak opacity between 0.70 and 0.95 for prominent visibility
+    const maxOpacity = 0.70 + Math.random() * 0.25;
 
     return {
       x: Math.random() * (width || window.innerWidth),
