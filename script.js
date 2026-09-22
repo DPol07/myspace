@@ -465,20 +465,20 @@ function initAmbientParticles() {
   let width = 0;
   let height = 0;
   let particles = [];
-  const PARTICLE_COUNT = 110; // Far fewer particles for a subtle, sparse ambient floating dust effect
+  const PARTICLE_COUNT = 380; // Moderately increased count for noticeable but non-distracting atmospheric density
 
   // Palette definition: ~80% warm bronze/gold, ~20% soft neutral dust
   const goldColors = [
-    { r: 235, g: 195, b: 70 },   // Warm Aztec Gold
-    { r: 245, g: 215, b: 110 },  // Soft Luminous Gold
-    { r: 210, g: 160, b: 75 },   // Deep Bronze
-    { r: 230, g: 170, b: 80 }    // Amber Bronze
+    { r: 245, g: 200, b: 70 },   // Warm Aztec Gold
+    { r: 255, g: 220, b: 110 },  // Soft Luminous Gold
+    { r: 220, g: 165, b: 75 },   // Deep Bronze
+    { r: 240, g: 175, b: 80 }    // Amber Bronze
   ];
 
   const dustColors = [
-    { r: 190, g: 180, b: 165 },  // Muted Parchment Dust
-    { r: 220, g: 210, b: 195 },  // Soft Luminous Dust
-    { r: 195, g: 185, b: 170 }   // Pale Ash Dust
+    { r: 200, g: 190, b: 175 },  // Muted Parchment Dust
+    { r: 230, g: 220, b: 205 },  // Soft Luminous Dust
+    { r: 205, g: 195, b: 180 }   // Pale Ash Dust
   ];
 
   const shapeTypes = ['circle', 'oval', 'polygon', 'speck'];
@@ -504,11 +504,11 @@ function initAmbientParticles() {
     const colorList = isGold ? goldColors : dustColors;
     const color = colorList[Math.floor(Math.random() * colorList.length)];
 
-    // Much smaller sizes: radius 0.8px - 2.6px (tiny dust specks)
-    const radius = 0.8 + Math.random() * 1.8;
+    // Small, varied sizes: radius 1.0px - 3.2px (small specks & flakes)
+    const radius = 1.0 + Math.random() * 2.2;
 
-    // Soft, subtle peak opacity between 0.25 and 0.60
-    const maxOpacity = 0.25 + Math.random() * 0.35;
+    // Noticeable yet atmospheric peak opacity between 0.45 and 0.75
+    const maxOpacity = 0.45 + Math.random() * 0.30;
 
     // Irregular shapes: circle, oval, polygon, speck
     const shapeType = shapeTypes[Math.floor(Math.random() * shapeTypes.length)];
