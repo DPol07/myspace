@@ -134,6 +134,488 @@ function scheduleMelody(startOffsetSec) {
   });
 }
 
+/* ==========================================================================
+   Sea Battle Mini-Game Logic
+   ========================================================================== */
+let seaCanvas = null;
+let seaCtx = null;
+
+let seaGameActive = false;
+let seaScore = 0;
+let seaLives = 3;
+let seaHighScore = 0;
+
+let playerShip = {
+  x: 150,
+  y: 350,
+  width: 32,
+  height: 48,
+  speed: 4.5,
+  invulnerableTimer: 0
+};
+
+let keyState = {
+  left: false,
+  right: false,
+  space: false
+};
+
+let cannonballs = [];
+let enemyShips = [];
+let rocks = [];
+let explosions = [];
+let waveLines = [];
+
+let lastCannonTime = 0;
+let cannonCooldown = 300; // ms between shots
+
+let spawnTimerRocks = 0;
+let spawnTimerEnemies = 0;
+let waveOffset = 0;
+
+function initSeaBattle() {
+  seaCanvas = document.getElementById('sea-battle-canvas');
+  if (!seaCanvas) return;
+  seaCtx = seaCanvas.getContext('2d');
+
+  // Load high score from localStorage if available
+  try {
+    const saved = localStorage.getItem('jack_sea_battle_highscore');
+    if (saved) seaHighScore = parseInt(saved, 10) || 0;
+  } catch (e) {}
+
+  // Set up wave background lines
+  waveLines = [];
+  for (let i = 0; i < 25; i++) {
+    waveLines.push({
+      x: Math.random() * seaCanvas.width,
+      y: Math.random() * seaCanvas.height,
+      length: 15 + Math.random() * 25,
+      speed: 1.2 + Math.random() * 0.8
+    });
+  }
+
+  // Keyboard Event Listeners
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') {
+      keyState.left = true;
+      if (seaGameActive) e.preventDefault();
+    } else if (e.key === 'ArrowRight') {
+      keyState.right = true;
+      if (seaGameActive) e.preventDefault();
+    } else if (e.key === ' ' || e.key === 'Spacebar') {
+      keyState.space = true;
+      if (seaGameActive) e.preventDefault();
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowLeft') keyState.left = false;
+    else if (e.key === 'ArrowRight') keyState.right = false;
+    else if (e.key === ' ' || e.key === 'Spacebar') keyState.space = false;
+  });
+
+  // Render initial static frame on canvas
+  drawSeaBattleFrame();
+}
+
+function startSeaBattle() {
+  seaGameActive = true;
+  seaScore = 0;
+  seaLives = 3;
+
+  playerShip.x = seaCanvas.width / 2 - playerShip.width / 2;
+  playerShip.y = seaCanvas.height - 65;
+  playerShip.invulnerableTimer = 0;
+
+  cannonballs = [];
+  enemyShips = [];
+  rocks = [];
+  explosions = [];
+
+  spawnTimerRocks = 0;
+  spawnTimerEnemies = 0;
+
+  updateSeaHUD();
+
+  const overlay = document.getElementById('sea-battle-overlay');
+  if (overlay) overlay.classList.add('hidden');
+
+  requestAnimationFrame(seaGameLoop);
+}
+
+function updateSeaHUD() {
+  const scoreSpan = document.getElementById('sea-score');
+  const livesSpan = document.getElementById('sea-lives');
+
+  if (scoreSpan) scoreSpan.innerText = seaScore;
+  if (livesSpan) {
+    let hearts = '';
+    for (let i = 0; i < 3; i++) {
+      hearts += (i < seaLives) ? '❤️ ' : '🖤 ';
+    }
+    livesSpan.innerText = hearts.trim();
+  }
+}
+
+function fireCannonball() {
+  const now = Date.now();
+  if (now - lastCannonTime < cannonCooldown) return;
+  lastCannonTime = now;
+
+  // Fire cannonball from center of Black Pearl
+  cannonballs.push({
+    x: playerShip.x + playerShip.width / 2,
+    y: playerShip.y,
+    radius: 4,
+    speed: 7
+  });
+}
+
+function spawnRock() {
+  // Create rocks with gaps for steering
+  const rockWidth = 35 + Math.random() * 25;
+  const rockHeight = 25 + Math.random() * 15;
+  const x = Math.random() * (seaCanvas.width - rockWidth);
+
+  rocks.push({
+    x: x,
+    y: -rockHeight,
+    width: rockWidth,
+    height: rockHeight,
+    speed: 2.2 + Math.random() * 0.8
+  });
+}
+
+function spawnEnemyShip() {
+  const enemyWidth = 28;
+  const enemyHeight = 42;
+  const x = Math.random() * (seaCanvas.width - enemyWidth);
+
+  enemyShips.push({
+    x: x,
+    y: -enemyHeight,
+    width: enemyWidth,
+    height: enemyHeight,
+    speed: 1.6 + Math.random() * 0.9
+  });
+}
+
+function createExplosion(x, y) {
+  for (let i = 0; i < 16; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 4;
+    explosions.push({
+      x: x,
+      y: y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      radius: 2 + Math.random() * 3,
+      life: 1.0,
+      decay: 0.03 + Math.random() * 0.03,
+      color: Math.random() < 0.6 ? '#ffaa00' : (Math.random() < 0.5 ? '#ff4400' : '#ffffaa')
+    });
+  }
+}
+
+function seaGameLoop() {
+  if (!seaGameActive) return;
+
+  // 1. Update Player Movement & Firing
+  if (keyState.left) {
+    playerShip.x -= playerShip.speed;
+    if (playerShip.x < 5) playerShip.x = 5;
+  }
+  if (keyState.right) {
+    playerShip.x += playerShip.speed;
+    if (playerShip.x > seaCanvas.width - playerShip.width - 5) {
+      playerShip.x = seaCanvas.width - playerShip.width - 5;
+    }
+  }
+  if (keyState.space) {
+    fireCannonball();
+  }
+
+  if (playerShip.invulnerableTimer > 0) {
+    playerShip.invulnerableTimer--;
+  }
+
+  // 2. Spawning Logic
+  spawnTimerRocks++;
+  if (spawnTimerRocks > 75) {
+    spawnRock();
+    spawnTimerRocks = 0;
+  }
+
+  spawnTimerEnemies++;
+  if (spawnTimerEnemies > 90) {
+    spawnEnemyShip();
+    spawnTimerEnemies = 0;
+  }
+
+  // 3. Update Wave Background
+  waveOffset = (waveOffset + 1.5) % 20;
+  waveLines.forEach(w => {
+    w.y += w.speed;
+    if (w.y > seaCanvas.height) {
+      w.y = -10;
+      w.x = Math.random() * seaCanvas.width;
+    }
+  });
+
+  // 4. Update Cannonballs
+  for (let i = cannonballs.length - 1; i >= 0; i--) {
+    const cb = cannonballs[i];
+    cb.y -= cb.speed;
+    if (cb.y < -10) {
+      cannonballs.splice(i, 1);
+    }
+  }
+
+  // 5. Update Rocks & Collision
+  for (let i = rocks.length - 1; i >= 0; i--) {
+    const r = rocks[i];
+    r.y += r.speed;
+
+    // Check collision with player
+    if (playerShip.invulnerableTimer === 0 && checkAABBCollision(playerShip, r)) {
+      seaLives--;
+      updateSeaHUD();
+      playerShip.invulnerableTimer = 60; // ~1 second flash invulnerability
+      createExplosion(playerShip.x + playerShip.width / 2, playerShip.y + playerShip.height / 2);
+
+      if (seaLives <= 0) {
+        triggerSeaGameOver();
+        return;
+      }
+    }
+
+    if (r.y > seaCanvas.height + 20) {
+      rocks.splice(i, 1);
+    }
+  }
+
+  // 6. Update Enemy Ships & Bullet Hits
+  for (let i = enemyShips.length - 1; i >= 0; i--) {
+    const e = enemyShips[i];
+    e.y += e.speed;
+
+    // Check hit by cannonball
+    let destroyed = false;
+    for (let j = cannonballs.length - 1; j >= 0; j--) {
+      const cb = cannonballs[j];
+      if (checkPointInAABB(cb.x, cb.y, e)) {
+        createExplosion(e.x + e.width / 2, e.y + e.height / 2);
+        cannonballs.splice(j, 1);
+        enemyShips.splice(i, 1);
+        seaScore += 1;
+        updateSeaHUD();
+        destroyed = true;
+        break;
+      }
+    }
+
+    if (!destroyed && e.y > seaCanvas.height + 30) {
+      enemyShips.splice(i, 1);
+    }
+  }
+
+  // 7. Update Explosions
+  for (let i = explosions.length - 1; i >= 0; i--) {
+    const p = explosions[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= p.decay;
+    if (p.life <= 0) {
+      explosions.splice(i, 1);
+    }
+  }
+
+  // 8. Render Frame
+  drawSeaBattleFrame();
+
+  requestAnimationFrame(seaGameLoop);
+}
+
+function checkAABBCollision(a, b) {
+  return a.x < b.x + b.width &&
+         a.x + a.width > b.x &&
+         a.y < b.y + b.height &&
+         a.y + a.height > b.y;
+}
+
+function checkPointInAABB(px, py, box) {
+  return px >= box.x && px <= box.x + box.width &&
+         py >= box.y && py <= box.y + box.height;
+}
+
+function triggerSeaGameOver() {
+  seaGameActive = false;
+
+  if (seaScore > seaHighScore) {
+    seaHighScore = seaScore;
+    try {
+      localStorage.setItem('jack_sea_battle_highscore', seaHighScore.toString());
+    } catch (e) {}
+  }
+
+  const overlay = document.getElementById('sea-battle-overlay');
+  const title = document.getElementById('sea-overlay-title');
+  const subtitle = document.getElementById('sea-overlay-subtitle');
+  const btn = document.getElementById('sea-start-btn');
+
+  if (title) title.innerText = '💀 SHIPWRECKED!';
+  if (subtitle) {
+    subtitle.innerHTML = `Your ship was destroyed by the jagged rocks!<br>Final Score: <strong class="gold-text">${seaScore}</strong> | High Score: <strong class="gold-text">${seaHighScore}</strong>`;
+  }
+  if (btn) btn.innerText = 'RESTART BATTLE';
+
+  if (overlay) overlay.classList.remove('hidden');
+
+  drawSeaBattleFrame();
+}
+
+function drawSeaBattleFrame() {
+  if (!seaCtx) return;
+
+  const w = seaCanvas.width;
+  const h = seaCanvas.height;
+
+  // Clear & Draw Ocean Gradient
+  const gradient = seaCtx.createLinearGradient(0, 0, 0, h);
+  gradient.addColorStop(0, '#0a233c');
+  gradient.addColorStop(0.5, '#071a2e');
+  gradient.addColorStop(1, '#04101e');
+  seaCtx.fillStyle = gradient;
+  seaCtx.fillRect(0, 0, w, h);
+
+  // Draw Wave Lines
+  seaCtx.strokeStyle = 'rgba(100, 180, 220, 0.15)';
+  seaCtx.lineWidth = 1.5;
+  waveLines.forEach(wl => {
+    seaCtx.beginPath();
+    seaCtx.moveTo(wl.x, wl.y);
+    seaCtx.quadraticCurveTo(wl.x + wl.length / 2, wl.y + 3, wl.x + wl.length, wl.y);
+    seaCtx.stroke();
+  });
+
+  // Draw Rocks
+  rocks.forEach(r => {
+    seaCtx.fillStyle = '#2d251e';
+    seaCtx.strokeStyle = '#18120d';
+    seaCtx.lineWidth = 2;
+
+    // Polygon Rock Shape
+    seaCtx.beginPath();
+    seaCtx.moveTo(r.x + r.width * 0.2, r.y);
+    seaCtx.lineTo(r.x + r.width * 0.8, r.y + r.height * 0.1);
+    seaCtx.lineTo(r.x + r.width, r.y + r.height * 0.6);
+    seaCtx.lineTo(r.x + r.width * 0.7, r.y + r.height);
+    seaCtx.lineTo(r.x + r.width * 0.1, r.y + r.height * 0.9);
+    seaCtx.lineTo(r.x, r.y + r.height * 0.4);
+    seaCtx.closePath();
+    seaCtx.fill();
+    seaCtx.stroke();
+
+    // Rock Highlights & Foam
+    seaCtx.fillStyle = '#4a3d32';
+    seaCtx.beginPath();
+    seaCtx.arc(r.x + r.width * 0.4, r.y + r.height * 0.4, r.width * 0.2, 0, Math.PI * 2);
+    seaCtx.fill();
+
+    // Water Foam Base
+    seaCtx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    seaCtx.lineWidth = 1;
+    seaCtx.strokeRect(r.x - 2, r.y + r.height - 2, r.width + 4, 4);
+  });
+
+  // Draw Enemy Ships (Red Sails)
+  enemyShips.forEach(e => {
+    // Ship Hull
+    seaCtx.fillStyle = '#3a2010';
+    seaCtx.strokeStyle = '#201005';
+    seaCtx.lineWidth = 1.5;
+
+    seaCtx.beginPath();
+    seaCtx.moveTo(e.x + e.width / 2, e.y + e.height);
+    seaCtx.lineTo(e.x + e.width, e.y + e.height * 0.3);
+    seaCtx.lineTo(e.x + e.width * 0.8, e.y);
+    seaCtx.lineTo(e.x + e.width * 0.2, e.y);
+    seaCtx.lineTo(e.x, e.y + e.height * 0.3);
+    seaCtx.closePath();
+    seaCtx.fill();
+    seaCtx.stroke();
+
+    // Red Sails
+    seaCtx.fillStyle = '#b91c1c';
+    seaCtx.fillRect(e.x + 3, e.y + e.height * 0.25, e.width - 6, e.height * 0.35);
+
+    // Mast
+    seaCtx.fillStyle = '#f59e0b';
+    seaCtx.fillRect(e.x + e.width / 2 - 1, e.y + 2, 2, e.height * 0.7);
+  });
+
+  // Draw Cannonballs
+  cannonballs.forEach(cb => {
+    seaCtx.fillStyle = '#ffd700';
+    seaCtx.shadowColor = '#ffaa00';
+    seaCtx.shadowBlur = 6;
+    seaCtx.beginPath();
+    seaCtx.arc(cb.x, cb.y, cb.radius, 0, Math.PI * 2);
+    seaCtx.fill();
+    seaCtx.shadowBlur = 0; // reset
+  });
+
+  // Draw Black Pearl Player Ship (Black Sails & Gold Details)
+  if (!seaGameActive || playerShip.invulnerableTimer % 6 < 3) {
+    const p = playerShip;
+
+    // Ship Hull
+    seaCtx.fillStyle = '#1c1917';
+    seaCtx.strokeStyle = '#d4af37';
+    seaCtx.lineWidth = 1.5;
+
+    seaCtx.beginPath();
+    seaCtx.moveTo(p.x + p.width / 2, p.y); // Bow
+    seaCtx.lineTo(p.x + p.width, p.y + p.height * 0.7);
+    seaCtx.lineTo(p.x + p.width * 0.8, p.y + p.height);
+    seaCtx.lineTo(p.x + p.width * 0.2, p.y + p.height);
+    seaCtx.lineTo(p.x, p.y + p.height * 0.7);
+    seaCtx.closePath();
+    seaCtx.fill();
+    seaCtx.stroke();
+
+    // Black Sails
+    seaCtx.fillStyle = '#09090b';
+    seaCtx.strokeStyle = '#44403c';
+    seaCtx.lineWidth = 1;
+
+    // Main Sail
+    seaCtx.fillRect(p.x + 3, p.y + p.height * 0.25, p.width - 6, p.height * 0.35);
+    seaCtx.strokeRect(p.x + 3, p.y + p.height * 0.25, p.width - 6, p.height * 0.35);
+
+    // Skull/Crossbones emblem on main sail
+    seaCtx.fillStyle = '#d4af37';
+    seaCtx.font = '10px sans-serif';
+    seaCtx.textAlign = 'center';
+    seaCtx.fillText('☠️', p.x + p.width / 2, p.y + p.height * 0.5);
+
+    // Bowsprit
+    seaCtx.fillStyle = '#d4af37';
+    seaCtx.fillRect(p.x + p.width / 2 - 1, p.y - 6, 2, 8);
+  }
+
+  // Draw Explosions
+  explosions.forEach(exp => {
+    seaCtx.fillStyle = exp.color;
+    seaCtx.globalAlpha = Math.max(0, exp.life);
+    seaCtx.beginPath();
+    seaCtx.arc(exp.x, exp.y, exp.radius, 0, Math.PI * 2);
+    seaCtx.fill();
+    seaCtx.globalAlpha = 1.0;
+  });
+}
+
 function toggleAudio() {
   initAudioContext();
 
@@ -699,6 +1181,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initCustomHookCursor();
   initCurseMiniGame();
   initAmbientParticles();
+  initSeaBattle();
 });
 
 function initCurseMiniGame() {
