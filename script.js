@@ -393,18 +393,58 @@ function spawnSeagull() {
 }
 
 function createExplosion(x, y) {
-  for (let i = 0; i < 18; i++) {
+  // 1. Brief Burst of Fire & Sparks (Immediate impact flash)
+  for (let i = 0; i < 8; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const speed = 1 + Math.random() * 4.5;
+    const speed = 1.2 + Math.random() * 3.5;
     explosions.push({
+      type: 'spark',
       x: x,
       y: y,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
-      radius: 2 + Math.random() * 3.5,
+      radius: 1.5 + Math.random() * 2,
       life: 1.0,
-      decay: 0.03 + Math.random() * 0.03,
-      color: Math.random() < 0.6 ? '#ffaa00' : (Math.random() < 0.5 ? '#ff4400' : '#ffffaa')
+      decay: 0.05 + Math.random() * 0.04,
+      color: Math.random() < 0.5 ? '#ffe066' : '#ff7700'
+    });
+  }
+
+  // 2. Wooden Debris / Splinters (Flying ship hull fragments)
+  for (let i = 0; i < 7; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 0.8 + Math.random() * 2.8;
+    explosions.push({
+      type: 'debris',
+      x: x + (Math.random() - 0.5) * 8,
+      y: y + (Math.random() - 0.5) * 8,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 0.3,
+      w: 2 + Math.random() * 2,
+      h: 4 + Math.random() * 4,
+      rotation: Math.random() * Math.PI * 2,
+      vRot: (Math.random() - 0.5) * 0.3,
+      life: 1.0,
+      decay: 0.03 + Math.random() * 0.02,
+      color: Math.random() < 0.6 ? '#6e4722' : '#3d240f'
+    });
+  }
+
+  // 3. Subtle Rising Smoke Clouds (Soft grey lingering smoke)
+  for (let i = 0; i < 6; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 0.3 + Math.random() * 1.0;
+    explosions.push({
+      type: 'smoke',
+      x: x + (Math.random() - 0.5) * 10,
+      y: y + (Math.random() - 0.5) * 10,
+      vx: Math.cos(angle) * speed,
+      vy: -0.4 - Math.random() * 0.5,
+      radius: 3 + Math.random() * 2,
+      grow: 0.12 + Math.random() * 0.08,
+      life: 1.0,
+      decay: 0.02 + Math.random() * 0.015,
+      color: Math.random() < 0.5 ? 'rgba(45, 45, 50, 0.7)' : 'rgba(80, 80, 85, 0.6)'
     });
   }
 }
@@ -640,6 +680,12 @@ function seaGameLoop() {
     p.x += p.vx;
     p.y += p.vy;
     p.life -= p.decay;
+    if (p.type === 'debris' && p.vRot) {
+      p.rotation += p.vRot;
+    }
+    if (p.type === 'smoke' && p.grow) {
+      p.radius += p.grow;
+    }
     if (p.life <= 0) explosions.splice(i, 1);
   }
 
@@ -755,58 +801,86 @@ function drawSeaBattleFrame() {
   // 1. Animated Ocean Sea Background
   drawOceanBackground(w, h);
 
-  // 2. Draw Small Tropical Islands with Realistic Palm Tree
+  // 2. Draw Small Tropical Islands with Refined Palm Tree
   islands.forEach(isl => {
     const cx = isl.x + isl.width / 2;
     const cy = isl.y + isl.height / 2;
 
-    // Shore / Sand Base
-    seaCtx.fillStyle = '#e2c687';
-    seaCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    // Sandy Shore
+    seaCtx.fillStyle = '#d9b46e';
+    seaCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
     seaCtx.lineWidth = 1.5;
     seaCtx.beginPath();
     seaCtx.ellipse(cx, cy, isl.width / 2, isl.height / 2, 0, 0, Math.PI * 2);
     seaCtx.fill();
     seaCtx.stroke();
 
-    // Inner Grass Base
-    seaCtx.fillStyle = '#3a8342';
+    // Inner Lush Grass Base
+    seaCtx.fillStyle = '#2d6a33';
     seaCtx.beginPath();
-    seaCtx.ellipse(cx - 2, cy + 2, isl.width * 0.3, isl.height * 0.28, 0, 0, Math.PI * 2);
+    seaCtx.ellipse(cx - 2, cy + 1, isl.width * 0.32, isl.height * 0.28, 0, 0, Math.PI * 2);
     seaCtx.fill();
 
-    // Palm Tree Trunk (Curved Brown)
-    seaCtx.strokeStyle = '#6e4722';
-    seaCtx.lineWidth = 3;
+    // Natural Curved Palm Trunk with Bark Ridges
+    const trunkBaseX = cx - 2;
+    const trunkBaseY = cy + 4;
+    const topX = cx - 5;
+    const topY = cy - 14;
+
+    seaCtx.strokeStyle = '#5a3d1e';
+    seaCtx.lineWidth = 3.2;
+    seaCtx.lineCap = 'round';
     seaCtx.beginPath();
-    seaCtx.moveTo(cx - 3, cy + 5);
-    seaCtx.quadraticCurveTo(cx - 7, cy - 3, cx - 2, cy - 12);
+    seaCtx.moveTo(trunkBaseX, trunkBaseY);
+    seaCtx.quadraticCurveTo(cx - 10, cy - 4, topX, topY);
     seaCtx.stroke();
 
-    // Palm Tree Fronds (Arching Green Leaves)
-    const topX = cx - 2;
-    const topY = cy - 12;
+    // Trunk Bark Ridges
+    seaCtx.strokeStyle = '#3e2812';
+    seaCtx.lineWidth = 1.2;
+    seaCtx.beginPath();
+    seaCtx.moveTo(cx - 4, cy + 1);
+    seaCtx.lineTo(cx - 2, cy + 2);
+    seaCtx.moveTo(cx - 6, cy - 3);
+    seaCtx.lineTo(cx - 4, cy - 2);
+    seaCtx.moveTo(cx - 7, cy - 8);
+    seaCtx.lineTo(cx - 5, cy - 7);
+    seaCtx.stroke();
 
-    seaCtx.strokeStyle = '#1b6326';
-    seaCtx.fillStyle = '#228b22';
-    seaCtx.lineWidth = 1.8;
+    // Arching Natural Palm Leaves (Feathery Fan Fronds)
+    const fronds = [
+      { endX: topX - 14, endY: topY - 2, ctrlX: topX - 8, ctrlY: topY - 10 },
+      { endX: topX - 10, endY: topY - 12, ctrlX: topX - 6, ctrlY: topY - 14 },
+      { endX: topX, endY: topY - 15, ctrlX: topX, ctrlY: topY - 16 },
+      { endX: topX + 11, endY: topY - 10, ctrlX: topX + 7, ctrlY: topY - 14 },
+      { endX: topX + 15, endY: topY - 1, ctrlX: topX + 9, ctrlY: topY - 8 },
+      { endX: topX + 10, endY: topY + 6, ctrlX: topX + 7, ctrlY: topY + 2 }
+    ];
 
-    const frondAngles = [-2.4, -1.6, -0.8, -0.2, 0.6];
-    frondAngles.forEach(angle => {
-      const leafX = topX + Math.cos(angle) * 14;
-      const leafY = topY + Math.sin(angle) * 12;
-
+    fronds.forEach(f => {
+      // Leaf Stem
+      seaCtx.strokeStyle = '#1b5e20';
+      seaCtx.lineWidth = 1.6;
       seaCtx.beginPath();
       seaCtx.moveTo(topX, topY);
-      seaCtx.quadraticCurveTo(topX + Math.cos(angle) * 8, topY + Math.sin(angle) * 8 - 3, leafX, leafY);
+      seaCtx.quadraticCurveTo(f.ctrlX, f.ctrlY, f.endX, f.endY);
       seaCtx.stroke();
+
+      // Leaf Blade / Frond Fill
+      seaCtx.fillStyle = '#2e7d32';
+      seaCtx.beginPath();
+      seaCtx.moveTo(topX, topY);
+      seaCtx.quadraticCurveTo(f.ctrlX - 1, f.ctrlY - 2, f.endX, f.endY);
+      seaCtx.quadraticCurveTo(f.ctrlX + 1, f.ctrlY + 2, topX, topY);
+      seaCtx.fill();
     });
 
-    // Coconuts
-    seaCtx.fillStyle = '#4a2d11';
+    // Coconuts at Crown
+    seaCtx.fillStyle = '#3e2723';
     seaCtx.beginPath();
-    seaCtx.arc(topX - 1, topY + 2, 1.8, 0, Math.PI * 2);
-    seaCtx.arc(topX + 2, topY + 2, 1.5, 0, Math.PI * 2);
+    seaCtx.arc(topX - 1, topY + 2, 2.0, 0, Math.PI * 2);
+    seaCtx.arc(topX + 2, topY + 1, 1.8, 0, Math.PI * 2);
+    seaCtx.arc(topX, topY + 3, 1.6, 0, Math.PI * 2);
     seaCtx.fill();
   });
 
@@ -943,13 +1017,22 @@ function drawSeaBattleFrame() {
     seaCtx.fillRect(p.x + p.width / 2 - 1, p.y - 6, 2, 8);
   }
 
-  // 6. Draw Explosions
+  // 6. Draw Explosions & Impact Effects
   explosions.forEach(exp => {
-    seaCtx.fillStyle = exp.color;
     seaCtx.globalAlpha = Math.max(0, exp.life);
-    seaCtx.beginPath();
-    seaCtx.arc(exp.x, exp.y, exp.radius, 0, Math.PI * 2);
-    seaCtx.fill();
+    if (exp.type === 'debris') {
+      seaCtx.save();
+      seaCtx.translate(exp.x, exp.y);
+      seaCtx.rotate(exp.rotation);
+      seaCtx.fillStyle = exp.color;
+      seaCtx.fillRect(-exp.w / 2, -exp.h / 2, exp.w, exp.h);
+      seaCtx.restore();
+    } else {
+      seaCtx.fillStyle = exp.color;
+      seaCtx.beginPath();
+      seaCtx.arc(exp.x, exp.y, exp.radius, 0, Math.PI * 2);
+      seaCtx.fill();
+    }
     seaCtx.globalAlpha = 1.0;
   });
 
