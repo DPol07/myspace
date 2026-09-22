@@ -150,7 +150,7 @@ let playerShip = {
   y: 350,
   width: 32,
   height: 48,
-  speed: 4.5,
+  speed: 4.8,
   invulnerableTimer: 0
 };
 
@@ -164,14 +164,17 @@ let cannonballs = [];
 let enemyShips = [];
 let rocks = [];
 let explosions = [];
-let waveLines = [];
+let rockShatters = [];
+
+// Animated Wave / Sea Mesh State
+let oceanTime = 0;
 
 let lastCannonTime = 0;
-let cannonCooldown = 300; // ms between shots
+let cannonCooldown = 260; // ms between shots
 
+let lastGapX = 170; // Position tracking for guaranteed fair rock paths
 let spawnTimerRocks = 0;
 let spawnTimerEnemies = 0;
-let waveOffset = 0;
 
 function initSeaBattle() {
   seaCanvas = document.getElementById('sea-battle-canvas');
@@ -183,17 +186,6 @@ function initSeaBattle() {
     const saved = localStorage.getItem('jack_sea_battle_highscore');
     if (saved) seaHighScore = parseInt(saved, 10) || 0;
   } catch (e) {}
-
-  // Set up wave background lines
-  waveLines = [];
-  for (let i = 0; i < 25; i++) {
-    waveLines.push({
-      x: Math.random() * seaCanvas.width,
-      y: Math.random() * seaCanvas.height,
-      length: 15 + Math.random() * 25,
-      speed: 1.2 + Math.random() * 0.8
-    });
-  }
 
   // Keyboard Event Listeners
   window.addEventListener('keydown', (e) => {
@@ -232,7 +224,9 @@ function startSeaBattle() {
   enemyShips = [];
   rocks = [];
   explosions = [];
+  rockShatters = [];
 
+  lastGapX = seaCanvas.width / 2;
   spawnTimerRocks = 0;
   spawnTimerEnemies = 0;
 
@@ -263,54 +257,96 @@ function fireCannonball() {
   if (now - lastCannonTime < cannonCooldown) return;
   lastCannonTime = now;
 
-  // Fire cannonball from center of Black Pearl
+  // Fire cannonball from center bow of Black Pearl
   cannonballs.push({
     x: playerShip.x + playerShip.width / 2,
     y: playerShip.y,
     radius: 4,
-    speed: 7
+    speed: 7.5
   });
 }
 
-function spawnRock() {
-  // Create rocks with gaps for steering
-  const rockWidth = 35 + Math.random() * 25;
-  const rockHeight = 25 + Math.random() * 15;
-  const x = Math.random() * (seaCanvas.width - rockWidth);
+/**
+ * Fair Rock Row Generator:
+ * Generates a row of rock obstacles with a guaranteed readable, navigable gap
+ * for the player. The gap width scales down gently with score, but remains
+ * comfortably wider than the player's ship (min 60px vs 32px ship width).
+ */
+function spawnRockRow() {
+  const baseSpeed = 2.2 + Math.min(2.0, seaScore * 0.08);
 
-  rocks.push({
-    x: x,
-    y: -rockHeight,
-    width: rockWidth,
-    height: rockHeight,
-    speed: 2.2 + Math.random() * 0.8
-  });
+  // Progressive Gap Width: starts at 85px, decreases down to min 60px (ship is 32px wide)
+  const gapWidth = Math.max(60, 85 - Math.min(25, seaScore * 0.8));
+
+  // Ensure next gap position is within reasonable steering distance from last gap (max shift ±80px)
+  const maxShift = 75;
+  let newGapX = lastGapX + (Math.random() * (maxShift * 2) - maxShift);
+  newGapX = Math.max(gapWidth / 2 + 15, Math.min(seaCanvas.width - gapWidth / 2 - 15, newGapX));
+  lastGapX = newGapX;
+
+  const gapLeft = newGapX - gapWidth / 2;
+  const gapRight = newGapX + gapWidth / 2;
+
+  const rockHeight = 28 + Math.random() * 10;
+
+  // Left rock barrier block
+  if (gapLeft > 10) {
+    rocks.push({
+      x: 0,
+      y: -rockHeight,
+      width: gapLeft,
+      height: rockHeight,
+      speed: baseSpeed
+    });
+  }
+
+  // Right rock barrier block
+  if (seaCanvas.width - gapRight > 10) {
+    rocks.push({
+      x: gapRight,
+      y: -rockHeight,
+      width: seaCanvas.width - gapRight,
+      height: rockHeight,
+      speed: baseSpeed
+    });
+  }
 }
 
+/**
+ * Fair Enemy Ship Generator:
+ * Spawns enemy ships at locations aligned with open water / clear paths so they
+ * are always shootable and never spawned inside solid rock walls.
+ */
 function spawnEnemyShip() {
   const enemyWidth = 28;
   const enemyHeight = 42;
-  const x = Math.random() * (seaCanvas.width - enemyWidth);
+
+  // Align enemy ship spawn near current or recent navigable gap
+  const spawnMargin = 15;
+  let x = lastGapX - enemyWidth / 2 + (Math.random() * 40 - 20);
+  x = Math.max(spawnMargin, Math.min(seaCanvas.width - enemyWidth - spawnMargin, x));
+
+  const baseSpeed = 1.8 + Math.min(2.2, seaScore * 0.07);
 
   enemyShips.push({
     x: x,
     y: -enemyHeight,
     width: enemyWidth,
     height: enemyHeight,
-    speed: 1.6 + Math.random() * 0.9
+    speed: baseSpeed
   });
 }
 
 function createExplosion(x, y) {
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 18; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const speed = 1 + Math.random() * 4;
+    const speed = 1 + Math.random() * 4.5;
     explosions.push({
       x: x,
       y: y,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
-      radius: 2 + Math.random() * 3,
+      radius: 2 + Math.random() * 3.5,
       life: 1.0,
       decay: 0.03 + Math.random() * 0.03,
       color: Math.random() < 0.6 ? '#ffaa00' : (Math.random() < 0.5 ? '#ff4400' : '#ffffaa')
@@ -318,8 +354,27 @@ function createExplosion(x, y) {
   }
 }
 
+function createRockShatterEffect(x, y) {
+  for (let i = 0; i < 12; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 3;
+    rockShatters.push({
+      x: x,
+      y: y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      radius: 1.5 + Math.random() * 2.5,
+      life: 1.0,
+      decay: 0.05 + Math.random() * 0.04,
+      color: Math.random() < 0.5 ? '#8c7865' : (Math.random() < 0.5 ? '#d4af37' : '#ffffff')
+    });
+  }
+}
+
 function seaGameLoop() {
   if (!seaGameActive) return;
+
+  oceanTime += 0.05;
 
   // 1. Update Player Movement & Firing
   if (keyState.left) {
@@ -340,98 +395,136 @@ function seaGameLoop() {
     playerShip.invulnerableTimer--;
   }
 
-  // 2. Spawning Logic
+  // 2. Progressive Spawning Timers (Slightly faster as score increases)
+  const rockSpawnInterval = Math.max(55, 80 - Math.floor(seaScore * 0.8));
+  const enemySpawnInterval = Math.max(65, 95 - Math.floor(seaScore * 1.0));
+
   spawnTimerRocks++;
-  if (spawnTimerRocks > 75) {
-    spawnRock();
+  if (spawnTimerRocks >= rockSpawnInterval) {
+    spawnRockRow();
     spawnTimerRocks = 0;
   }
 
   spawnTimerEnemies++;
-  if (spawnTimerEnemies > 90) {
+  if (spawnTimerEnemies >= enemySpawnInterval) {
     spawnEnemyShip();
     spawnTimerEnemies = 0;
   }
 
-  // 3. Update Wave Background
-  waveOffset = (waveOffset + 1.5) % 20;
-  waveLines.forEach(w => {
-    w.y += w.speed;
-    if (w.y > seaCanvas.height) {
-      w.y = -10;
-      w.x = Math.random() * seaCanvas.width;
-    }
-  });
-
-  // 4. Update Cannonballs
+  // 3. Update Cannonballs & Collision with Rocks / Enemy Ships
   for (let i = cannonballs.length - 1; i >= 0; i--) {
     const cb = cannonballs[i];
     cb.y -= cb.speed;
-    if (cb.y < -10) {
-      cannonballs.splice(i, 1);
-    }
-  }
 
-  // 5. Update Rocks & Collision
-  for (let i = rocks.length - 1; i >= 0; i--) {
-    const r = rocks[i];
-    r.y += r.speed;
+    let cbHit = false;
 
-    // Check collision with player
-    if (playerShip.invulnerableTimer === 0 && checkAABBCollision(playerShip, r)) {
-      seaLives--;
-      updateSeaHUD();
-      playerShip.invulnerableTimer = 60; // ~1 second flash invulnerability
-      createExplosion(playerShip.x + playerShip.width / 2, playerShip.y + playerShip.height / 2);
-
-      if (seaLives <= 0) {
-        triggerSeaGameOver();
-        return;
-      }
-    }
-
-    if (r.y > seaCanvas.height + 20) {
-      rocks.splice(i, 1);
-    }
-  }
-
-  // 6. Update Enemy Ships & Bullet Hits
-  for (let i = enemyShips.length - 1; i >= 0; i--) {
-    const e = enemyShips[i];
-    e.y += e.speed;
-
-    // Check hit by cannonball
-    let destroyed = false;
-    for (let j = cannonballs.length - 1; j >= 0; j--) {
-      const cb = cannonballs[j];
-      if (checkPointInAABB(cb.x, cb.y, e)) {
-        createExplosion(e.x + e.width / 2, e.y + e.height / 2);
-        cannonballs.splice(j, 1);
-        enemyShips.splice(i, 1);
-        seaScore += 1;
-        updateSeaHUD();
-        destroyed = true;
+    // Check collision with Rocks (Rocks BLOCK cannonballs)
+    for (let rIdx = 0; rIdx < rocks.length; rIdx++) {
+      const r = rocks[rIdx];
+      if (checkPointInAABB(cb.x, cb.y, r)) {
+        createRockShatterEffect(cb.x, cb.y);
+        cannonballs.splice(i, 1);
+        cbHit = true;
         break;
       }
     }
 
-    if (!destroyed && e.y > seaCanvas.height + 30) {
-      enemyShips.splice(i, 1);
+    if (cbHit) continue;
+
+    // Check collision with Enemy Ships (+1 Point)
+    for (let eIdx = enemyShips.length - 1; eIdx >= 0; eIdx--) {
+      const e = enemyShips[eIdx];
+      if (checkPointInAABB(cb.x, cb.y, e)) {
+        createExplosion(e.x + e.width / 2, e.y + e.height / 2);
+        cannonballs.splice(i, 1);
+        enemyShips.splice(eIdx, 1);
+        seaScore += 1;
+        updateSeaHUD();
+        cbHit = true;
+        break;
+      }
+    }
+
+    if (!cbHit && cb.y < -10) {
+      cannonballs.splice(i, 1);
     }
   }
 
-  // 7. Update Explosions
+  // 4. Update Rocks & Collision with Player
+  for (let i = rocks.length - 1; i >= 0; i--) {
+    const r = rocks[i];
+    r.y += r.speed;
+
+    // Player collision with rock costs 1 life
+    if (playerShip.invulnerableTimer === 0 && checkAABBCollision(playerShip, r)) {
+      seaLives--;
+      updateSeaHUD();
+      playerShip.invulnerableTimer = 60; // ~1s invulnerability flash
+      createExplosion(playerShip.x + playerShip.width / 2, playerShip.y + playerShip.height / 2);
+
+      if (seaLives <= 0) {
+        triggerSeaGameOver("Your ship was destroyed by the jagged rocks!");
+        return;
+      }
+    }
+
+    if (r.y > seaCanvas.height + 30) {
+      rocks.splice(i, 1);
+    }
+  }
+
+  // 5. Update Enemy Ships & Escaped Ship Penalty
+  for (let i = enemyShips.length - 1; i >= 0; i--) {
+    const e = enemyShips[i];
+    e.y += e.speed;
+
+    // Check if enemy ship reaches the player's ship level / reaches bottom -> Lose 1 Life
+    if (e.y >= playerShip.y - 10) {
+      seaLives--;
+      updateSeaHUD();
+      createExplosion(e.x + e.width / 2, e.y + e.height / 2);
+      enemyShips.splice(i, 1);
+
+      if (seaLives <= 0) {
+        triggerSeaGameOver("An enemy ship breached your defenses!");
+        return;
+      }
+      continue;
+    }
+
+    // Check direct collision with player
+    if (playerShip.invulnerableTimer === 0 && checkAABBCollision(playerShip, e)) {
+      seaLives--;
+      updateSeaHUD();
+      playerShip.invulnerableTimer = 60;
+      createExplosion(e.x + e.width / 2, e.y + e.height / 2);
+      enemyShips.splice(i, 1);
+
+      if (seaLives <= 0) {
+        triggerSeaGameOver("Collided with an enemy flagship!");
+        return;
+      }
+    }
+  }
+
+  // 6. Update Explosions & Rock Shatter Particles
   for (let i = explosions.length - 1; i >= 0; i--) {
     const p = explosions[i];
     p.x += p.vx;
     p.y += p.vy;
     p.life -= p.decay;
-    if (p.life <= 0) {
-      explosions.splice(i, 1);
-    }
+    if (p.life <= 0) explosions.splice(i, 1);
   }
 
-  // 8. Render Frame
+  for (let i = rockShatters.length - 1; i >= 0; i--) {
+    const p = rockShatters[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= p.decay;
+    if (p.life <= 0) rockShatters.splice(i, 1);
+  }
+
+  // 7. Render Complete Frame
   drawSeaBattleFrame();
 
   requestAnimationFrame(seaGameLoop);
@@ -449,7 +542,7 @@ function checkPointInAABB(px, py, box) {
          py >= box.y && py <= box.y + box.height;
 }
 
-function triggerSeaGameOver() {
+function triggerSeaGameOver(reasonText = "Your ship was destroyed!") {
   seaGameActive = false;
 
   if (seaScore > seaHighScore) {
@@ -466,7 +559,7 @@ function triggerSeaGameOver() {
 
   if (title) title.innerText = '💀 SHIPWRECKED!';
   if (subtitle) {
-    subtitle.innerHTML = `Your ship was destroyed by the jagged rocks!<br>Final Score: <strong class="gold-text">${seaScore}</strong> | High Score: <strong class="gold-text">${seaHighScore}</strong>`;
+    subtitle.innerHTML = `${reasonText}<br>Final Score: <strong class="gold-text">${seaScore}</strong> | High Score: <strong class="gold-text">${seaHighScore}</strong>`;
   }
   if (btn) btn.innerText = 'RESTART BATTLE';
 
@@ -475,61 +568,92 @@ function triggerSeaGameOver() {
   drawSeaBattleFrame();
 }
 
+/**
+ * Animated Ocean Renderer:
+ * Renders multi-layered undulating sine-wave ocean currents, water ripples, foam highlights,
+ * and deep Caribbean water gradients for a realistic animated sea feel.
+ */
+function drawOceanBackground(w, h) {
+  // Deep Ocean Base Gradient
+  const gradient = seaCtx.createLinearGradient(0, 0, 0, h);
+  gradient.addColorStop(0, '#061a2e');
+  gradient.addColorStop(0.5, '#0a2642');
+  gradient.addColorStop(1, '#041220');
+  seaCtx.fillStyle = gradient;
+  seaCtx.fillRect(0, 0, w, h);
+
+  // Layer 1: Deep Slow Wave Waves (Dark Cyan Wave Mesh)
+  seaCtx.strokeStyle = 'rgba(14, 85, 120, 0.25)';
+  seaCtx.lineWidth = 3;
+  for (let y = 15; y < h + 20; y += 28) {
+    seaCtx.beginPath();
+    for (let x = 0; x <= w; x += 10) {
+      const waveY = y + Math.sin((x * 0.02) + oceanTime * 0.8 + (y * 0.05)) * 4;
+      if (x === 0) seaCtx.moveTo(x, waveY);
+      else seaCtx.lineTo(x, waveY);
+    }
+    seaCtx.stroke();
+  }
+
+  // Layer 2: Luminous Ocean Surface Crests & Ripples (Glinting Highlights)
+  seaCtx.strokeStyle = 'rgba(80, 190, 230, 0.35)';
+  seaCtx.lineWidth = 1.5;
+  for (let y = 8; y < h + 20; y += 36) {
+    seaCtx.beginPath();
+    for (let x = 0; x <= w; x += 12) {
+      const waveY = y + Math.cos((x * 0.035) - oceanTime * 1.2 + (y * 0.08)) * 3;
+      if (x === 0) seaCtx.moveTo(x, waveY);
+      else seaCtx.lineTo(x, waveY);
+    }
+    seaCtx.stroke();
+  }
+
+  // Layer 3: Foam Sparkle Highlights drifting downward with current
+  seaCtx.fillStyle = 'rgba(200, 240, 255, 0.4)';
+  for (let i = 0; i < 18; i++) {
+    const fx = (Math.sin(i * 123 + oceanTime * 0.5) * 0.5 + 0.5) * w;
+    const fy = ((i * 24 + oceanTime * 15) % (h + 20)) - 10;
+    seaCtx.beginPath();
+    seaCtx.arc(fx, fy, 1.2, 0, Math.PI * 2);
+    seaCtx.fill();
+  }
+}
+
 function drawSeaBattleFrame() {
   if (!seaCtx) return;
 
   const w = seaCanvas.width;
   const h = seaCanvas.height;
 
-  // Clear & Draw Ocean Gradient
-  const gradient = seaCtx.createLinearGradient(0, 0, 0, h);
-  gradient.addColorStop(0, '#0a233c');
-  gradient.addColorStop(0.5, '#071a2e');
-  gradient.addColorStop(1, '#04101e');
-  seaCtx.fillStyle = gradient;
-  seaCtx.fillRect(0, 0, w, h);
+  // 1. Animated Ocean Sea Background
+  drawOceanBackground(w, h);
 
-  // Draw Wave Lines
-  seaCtx.strokeStyle = 'rgba(100, 180, 220, 0.15)';
-  seaCtx.lineWidth = 1.5;
-  waveLines.forEach(wl => {
-    seaCtx.beginPath();
-    seaCtx.moveTo(wl.x, wl.y);
-    seaCtx.quadraticCurveTo(wl.x + wl.length / 2, wl.y + 3, wl.x + wl.length, wl.y);
-    seaCtx.stroke();
-  });
-
-  // Draw Rocks
+  // 2. Draw Rocks (Blocky jagged textures)
   rocks.forEach(r => {
     seaCtx.fillStyle = '#2d251e';
     seaCtx.strokeStyle = '#18120d';
     seaCtx.lineWidth = 2;
 
-    // Polygon Rock Shape
     seaCtx.beginPath();
-    seaCtx.moveTo(r.x + r.width * 0.2, r.y);
-    seaCtx.lineTo(r.x + r.width * 0.8, r.y + r.height * 0.1);
-    seaCtx.lineTo(r.x + r.width, r.y + r.height * 0.6);
-    seaCtx.lineTo(r.x + r.width * 0.7, r.y + r.height);
-    seaCtx.lineTo(r.x + r.width * 0.1, r.y + r.height * 0.9);
-    seaCtx.lineTo(r.x, r.y + r.height * 0.4);
+    seaCtx.moveTo(r.x, r.y);
+    seaCtx.lineTo(r.x + r.width, r.y);
+    seaCtx.lineTo(r.x + r.width, r.y + r.height);
+    seaCtx.lineTo(r.x, r.y + r.height);
     seaCtx.closePath();
     seaCtx.fill();
     seaCtx.stroke();
 
-    // Rock Highlights & Foam
+    // Rock Highlights
     seaCtx.fillStyle = '#4a3d32';
-    seaCtx.beginPath();
-    seaCtx.arc(r.x + r.width * 0.4, r.y + r.height * 0.4, r.width * 0.2, 0, Math.PI * 2);
-    seaCtx.fill();
+    seaCtx.fillRect(r.x + 3, r.y + 3, r.width - 6, Math.max(3, r.height * 0.25));
 
     // Water Foam Base
-    seaCtx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-    seaCtx.lineWidth = 1;
-    seaCtx.strokeRect(r.x - 2, r.y + r.height - 2, r.width + 4, 4);
+    seaCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    seaCtx.lineWidth = 1.5;
+    seaCtx.strokeRect(r.x - 2, r.y + r.height - 2, r.width + 4, 3);
   });
 
-  // Draw Enemy Ships (Red Sails)
+  // 3. Draw Enemy Ships (Red Sails)
   enemyShips.forEach(e => {
     // Ship Hull
     seaCtx.fillStyle = '#3a2010';
@@ -555,18 +679,18 @@ function drawSeaBattleFrame() {
     seaCtx.fillRect(e.x + e.width / 2 - 1, e.y + 2, 2, e.height * 0.7);
   });
 
-  // Draw Cannonballs
+  // 4. Draw Cannonballs
   cannonballs.forEach(cb => {
     seaCtx.fillStyle = '#ffd700';
     seaCtx.shadowColor = '#ffaa00';
-    seaCtx.shadowBlur = 6;
+    seaCtx.shadowBlur = 8;
     seaCtx.beginPath();
     seaCtx.arc(cb.x, cb.y, cb.radius, 0, Math.PI * 2);
     seaCtx.fill();
-    seaCtx.shadowBlur = 0; // reset
+    seaCtx.shadowBlur = 0;
   });
 
-  // Draw Black Pearl Player Ship (Black Sails & Gold Details)
+  // 5. Draw Black Pearl Player Ship
   if (!seaGameActive || playerShip.invulnerableTimer % 6 < 3) {
     const p = playerShip;
 
@@ -590,11 +714,10 @@ function drawSeaBattleFrame() {
     seaCtx.strokeStyle = '#44403c';
     seaCtx.lineWidth = 1;
 
-    // Main Sail
     seaCtx.fillRect(p.x + 3, p.y + p.height * 0.25, p.width - 6, p.height * 0.35);
     seaCtx.strokeRect(p.x + 3, p.y + p.height * 0.25, p.width - 6, p.height * 0.35);
 
-    // Skull/Crossbones emblem on main sail
+    // Skull/Crossbones emblem
     seaCtx.fillStyle = '#d4af37';
     seaCtx.font = '10px sans-serif';
     seaCtx.textAlign = 'center';
@@ -605,12 +728,22 @@ function drawSeaBattleFrame() {
     seaCtx.fillRect(p.x + p.width / 2 - 1, p.y - 6, 2, 8);
   }
 
-  // Draw Explosions
+  // 6. Draw Explosions
   explosions.forEach(exp => {
     seaCtx.fillStyle = exp.color;
     seaCtx.globalAlpha = Math.max(0, exp.life);
     seaCtx.beginPath();
     seaCtx.arc(exp.x, exp.y, exp.radius, 0, Math.PI * 2);
+    seaCtx.fill();
+    seaCtx.globalAlpha = 1.0;
+  });
+
+  // 7. Draw Rock Shatter Particles
+  rockShatters.forEach(sp => {
+    seaCtx.fillStyle = sp.color;
+    seaCtx.globalAlpha = Math.max(0, sp.life);
+    seaCtx.beginPath();
+    seaCtx.arc(sp.x, sp.y, sp.radius, 0, Math.PI * 2);
     seaCtx.fill();
     seaCtx.globalAlpha = 1.0;
   });
