@@ -465,7 +465,7 @@ function initAmbientParticles() {
   let width = 0;
   let height = 0;
   let particles = [];
-  const PARTICLE_COUNT = 240; // High particle count for rich atmospheric density
+  const PARTICLE_COUNT = 2000; // Dramatically increased particle count (~10x) for massive atmospheric density
 
   // Palette definition: ~80% warm bronze/gold, ~20% soft neutral dust
   const goldColors = [
@@ -502,25 +502,26 @@ function initAmbientParticles() {
     const colorList = isGold ? goldColors : dustColors;
     const color = colorList[Math.floor(Math.random() * colorList.length)];
 
-    // Larger Sizes: 4px - 10px diameter (radius 2.0 - 5.0px)
+    // Dramatically Larger Sizes: 6px - 20px diameter (radius 3.0 - 10.0px)
     const randSize = Math.random();
-    let radius = 2.5;
+    let radius = 4.0;
     if (randSize > 0.80) {
-      radius = 4.0 + Math.random() * 1.0; // ~8-10px diameter
+      radius = 7.0 + Math.random() * 3.0; // ~14-20px diameter
     } else if (randSize > 0.35) {
-      radius = 2.8 + Math.random() * 1.0; // ~5.6-7.6px diameter
+      radius = 5.0 + Math.random() * 2.0; // ~10-14px diameter
     } else {
-      radius = 2.0 + Math.random() * 0.7; // ~4-5.4px diameter
+      radius = 3.0 + Math.random() * 2.0; // ~6-10px diameter
     }
 
-    // High peak opacity between 0.70 and 0.95 for prominent visibility
-    const maxOpacity = 0.70 + Math.random() * 0.25;
+    // High peak opacity between 0.60 and 0.90 for prominent visibility
+    const maxOpacity = 0.60 + Math.random() * 0.30;
 
     return {
       x: Math.random() * (width || window.innerWidth),
       y: isInitial ? Math.random() * (height || window.innerHeight) : (Math.random() < 0.5 ? -10 : height + 10),
       radius: radius,
       color: color,
+      rgbString: `rgb(${color.r}, ${color.g}, ${color.b})`,
       maxOpacity: maxOpacity,
       // Independent sine wave fade in / out cycle
       fadePhase: Math.random() * Math.PI * 2,
@@ -573,15 +574,12 @@ function initAmbientParticles() {
         p.x = -10;
       }
 
-      // Render particle with soft radial gradient and glowing halo for a smooth, visible dust look
-      ctx.save();
+      // Performant particle rendering using globalAlpha and pre-formatted rgbString
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = p.rgbString;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha.toFixed(3)})`;
-      ctx.shadowColor = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${(alpha * 0.85).toFixed(3)})`;
-      ctx.shadowBlur = p.radius > 1.8 ? 6 : 4;
       ctx.fill();
-      ctx.restore();
     }
 
     requestAnimationFrame(updateAndDrawParticles);
