@@ -465,7 +465,7 @@ function initAmbientParticles() {
   let width = 0;
   let height = 0;
   let particles = [];
-  const DENSITY_PER_VIEWPORT = 380; // 380 particles per 800px viewport height
+  const DENSITY_PER_VIEWPORT = 190; // 190 particles per 800px viewport height (original subtle density)
 
   // Palette definition: ~80% warm bronze/gold, ~20% soft neutral dust
   const goldColors = [
