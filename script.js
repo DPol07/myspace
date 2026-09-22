@@ -465,20 +465,20 @@ function initAmbientParticles() {
   let width = 0;
   let height = 0;
   let particles = [];
-  const PARTICLE_COUNT = 42; // Small count floating through full page
+  const PARTICLE_COUNT = 85; // Count scaled for clear visibility across full document
 
-  // Palette definition: ~80% muted warm bronze/gold, ~20% soft neutral dust
+  // Palette definition: ~80% warm bronze/gold, ~20% soft neutral dust
   const goldColors = [
-    { r: 212, g: 175, b: 55 },   // Classic Aztec Gold
-    { r: 229, g: 193, b: 88 },   // Warm Bright Gold
-    { r: 180, g: 140, b: 60 },   // Aged Deep Bronze
-    { r: 217, g: 150, b: 60 }    // Warm Amber Bronze
+    { r: 235, g: 195, b: 65 },   // Classic Aztec Gold (Bright)
+    { r: 245, g: 215, b: 110 },  // Warm Radiant Gold
+    { r: 210, g: 160, b: 70 },   // Warm Deep Bronze
+    { r: 230, g: 165, b: 75 }    // Amber Bronze
   ];
 
   const dustColors = [
-    { r: 166, g: 152, b: 136 },  // Muted Ash Dust
-    { r: 200, g: 190, b: 174 },  // Soft Parchment Dust
-    { r: 175, g: 165, b: 150 }   // Pale Earth Dust
+    { r: 190, g: 178, b: 160 },  // Muted Parchment Dust
+    { r: 220, g: 210, b: 195 },  // Soft Luminous Dust
+    { r: 195, g: 185, b: 170 }   // Pale Ash Dust
   ];
 
   function resizeCanvas() {
@@ -502,19 +502,19 @@ function initAmbientParticles() {
     const colorList = isGold ? goldColors : dustColors;
     const color = colorList[Math.floor(Math.random() * colorList.length)];
 
-    // Sizes: mostly 1-2px diameter (radius 0.5 - 1.0), with a few up to 3px (radius 1.5)
+    // Sizes: 2px - 5px diameter (radius 1.0 - 2.5px)
     const randSize = Math.random();
-    let radius = 0.6;
-    if (randSize > 0.85) {
-      radius = 1.4 + Math.random() * 0.2; // ~3px diameter
-    } else if (randSize > 0.4) {
-      radius = 0.9 + Math.random() * 0.3; // ~2px diameter
+    let radius = 1.2;
+    if (randSize > 0.80) {
+      radius = 2.0 + Math.random() * 0.5; // ~4-5px diameter
+    } else if (randSize > 0.35) {
+      radius = 1.4 + Math.random() * 0.5; // ~3-4px diameter
     } else {
-      radius = 0.5 + Math.random() * 0.3; // ~1px diameter
+      radius = 1.0 + Math.random() * 0.3; // ~2-2.5px diameter
     }
 
-    // Peak opacity between 0.35 and 0.70 for soft yet noticeable presence
-    const maxOpacity = 0.35 + Math.random() * 0.35;
+    // Peak opacity between 0.60 and 0.90 for clear visibility against dark background
+    const maxOpacity = 0.60 + Math.random() * 0.30;
 
     return {
       x: Math.random() * (width || window.innerWidth),
@@ -524,13 +524,13 @@ function initAmbientParticles() {
       maxOpacity: maxOpacity,
       // Independent sine wave fade in / out cycle
       fadePhase: Math.random() * Math.PI * 2,
-      fadeSpeed: 0.005 + Math.random() * 0.008,
+      fadeSpeed: 0.006 + Math.random() * 0.010,
       // Slow drift movement (vertical float + subtle horizontal wave drift)
-      vx: (Math.random() - 0.5) * 0.25,
-      vy: -0.12 - Math.random() * 0.22, // Slow upward ambient drift
+      vx: (Math.random() - 0.5) * 0.30,
+      vy: -0.15 - Math.random() * 0.25, // Slow upward ambient drift
       wobblePhase: Math.random() * Math.PI * 2,
       wobbleSpeed: 0.01 + Math.random() * 0.015,
-      wobbleAmp: 0.15 + Math.random() * 0.25
+      wobbleAmp: 0.20 + Math.random() * 0.30
     };
   }
 
@@ -573,13 +573,13 @@ function initAmbientParticles() {
         p.x = -10;
       }
 
-      // Render particle with soft radial gradient for a smooth, natural dust look
+      // Render particle with soft radial gradient and glowing halo for a smooth, visible dust look
       ctx.save();
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha.toFixed(3)})`;
-      ctx.shadowColor = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${(alpha * 0.6).toFixed(3)})`;
-      ctx.shadowBlur = p.radius > 1.2 ? 3 : 1.5;
+      ctx.shadowColor = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${(alpha * 0.85).toFixed(3)})`;
+      ctx.shadowBlur = p.radius > 1.8 ? 6 : 4;
       ctx.fill();
       ctx.restore();
     }
