@@ -163,6 +163,9 @@ let keyState = {
 let cannonballs = [];
 let enemyShips = [];
 let rocks = [];
+let barrels = [];
+let islands = [];
+let seagulls = [];
 let explosions = [];
 let rockShatters = [];
 
@@ -172,9 +175,11 @@ let oceanTime = 0;
 let lastCannonTime = 0;
 let cannonCooldown = 260; // ms between shots
 
-let lastGapX = 170; // Position tracking for guaranteed fair rock paths
 let spawnTimerRocks = 0;
 let spawnTimerEnemies = 0;
+let spawnTimerBarrels = 0;
+let spawnTimerIslands = 0;
+let spawnTimerSeagulls = 0;
 
 function initSeaBattle() {
   seaCanvas = document.getElementById('sea-battle-canvas');
@@ -223,12 +228,17 @@ function startSeaBattle() {
   cannonballs = [];
   enemyShips = [];
   rocks = [];
+  barrels = [];
+  islands = [];
+  seagulls = [];
   explosions = [];
   rockShatters = [];
 
-  lastGapX = seaCanvas.width / 2;
   spawnTimerRocks = 0;
   spawnTimerEnemies = 0;
+  spawnTimerBarrels = 0;
+  spawnTimerIslands = 0;
+  spawnTimerSeagulls = 0;
 
   updateSeaHUD();
 
@@ -267,70 +277,70 @@ function fireCannonball() {
 }
 
 /**
- * Individual Rock Generator:
- * Generates groups of individual jagged rock boulders with a guaranteed readable,
- * navigable gap for the Black Pearl.
+ * Scattered Rocks Generator:
+ * Spawns individual rocks scattered irregularly across the open sea with varied sizes,
+ * positions, and occasional small clusters, leaving wide open water for clear navigation.
  */
-function spawnRockRow() {
-  const baseSpeed = 2.2 + Math.min(2.0, seaScore * 0.08);
+function spawnScatteredRock() {
+  const baseSpeed = 2.0 + Math.min(1.8, seaScore * 0.07);
+  const rockW = 18 + Math.random() * 18; // 18px - 36px wide
+  const rockH = 16 + Math.random() * 16; // 16px - 32px tall
 
-  // Progressive Gap Width: starts at 90px, decreases down to min 65px (ship is 32px wide)
-  const gapWidth = Math.max(65, 90 - Math.min(25, seaScore * 0.8));
+  // Pick a random X position on canvas
+  let x = 15 + Math.random() * (seaCanvas.width - rockW - 30);
 
-  // Ensure next gap position is within reasonable steering distance from last gap
-  const maxShift = 70;
-  let newGapX = lastGapX + (Math.random() * (maxShift * 2) - maxShift);
-  newGapX = Math.max(gapWidth / 2 + 25, Math.min(seaCanvas.width - gapWidth / 2 - 25, newGapX));
-  lastGapX = newGapX;
-
-  const gapLeft = newGapX - gapWidth / 2;
-  const gapRight = newGapX + gapWidth / 2;
-
-  // Left side individual boulders
-  let currX = 5;
-  while (currX + 20 < gapLeft) {
-    const rockW = Math.min(32 + Math.random() * 16, gapLeft - currX);
-    if (rockW < 18) break;
-    const rockH = 24 + Math.random() * 12;
-    rocks.push({
-      x: currX,
-      y: -rockH,
-      width: rockW,
-      height: rockH,
-      speed: baseSpeed
-    });
-    currX += rockW + 6 + Math.random() * 8; // Small space between distinct rock boulders
+  // Avoid placing directly over an existing top rock
+  const topRocks = rocks.filter(r => r.y < 40);
+  for (let r of topRocks) {
+    if (Math.abs((x + rockW / 2) - (r.x + r.width / 2)) < 55) {
+      x = (r.x + r.width + 60) % (seaCanvas.width - rockW - 30);
+      if (x < 15) x = 15;
+    }
   }
 
-  // Right side individual boulders
-  currX = gapRight;
-  while (currX < seaCanvas.width - 15) {
-    const rockW = Math.min(32 + Math.random() * 16, seaCanvas.width - 5 - currX);
-    if (rockW < 18) break;
-    const rockH = 24 + Math.random() * 12;
+  rocks.push({
+    x: x,
+    y: -rockH,
+    width: rockW,
+    height: rockH,
+    speed: baseSpeed
+  });
+
+  // 25% chance to spawn a small adjacent companion rock (small cluster)
+  if (Math.random() < 0.25) {
+    const companionW = 14 + Math.random() * 12;
+    const companionH = 14 + Math.random() * 12;
+    const offsetX = Math.random() < 0.5 ? (rockW - 4) : (-companionW + 4);
+    const companionX = Math.max(10, Math.min(seaCanvas.width - companionW - 10, x + offsetX));
+
     rocks.push({
-      x: currX,
-      y: -rockH,
-      width: rockW,
-      height: rockH,
+      x: companionX,
+      y: -rockH + (Math.random() * 6 - 3),
+      width: companionW,
+      height: companionH,
       speed: baseSpeed
     });
-    currX += rockW + 6 + Math.random() * 8;
   }
 }
 
 /**
  * Reachable Enemy Ship Generator:
- * Spawns enemy ships directly inside open water corridors (the navigable gap channel)
- * so every enemy ship is guaranteed reachable and shootable by the Black Pearl.
+ * Spawns enemy ships at random open-water positions across the sea.
  */
 function spawnEnemyShip() {
   const enemyWidth = 28;
   const enemyHeight = 42;
 
-  // Always spawn inside open navigable water channel (lastGapX ± 15px)
-  let x = lastGapX - enemyWidth / 2 + (Math.random() * 30 - 15);
-  x = Math.max(15, Math.min(seaCanvas.width - enemyWidth - 15, x));
+  let x = 20 + Math.random() * (seaCanvas.width - enemyWidth - 40);
+
+  // Ensure ship doesn't spawn directly on top of a rock at top of screen
+  const topRocks = rocks.filter(r => r.y < 50);
+  for (let r of topRocks) {
+    if (x < r.x + r.width + 10 && x + enemyWidth > r.x - 10) {
+      x = (r.x + r.width + 25) % (seaCanvas.width - enemyWidth - 20);
+      if (x < 15) x = 15;
+    }
+  }
 
   const baseSpeed = 1.8 + Math.min(2.2, seaScore * 0.07);
 
@@ -340,6 +350,45 @@ function spawnEnemyShip() {
     width: enemyWidth,
     height: enemyHeight,
     speed: baseSpeed
+  });
+}
+
+/**
+ * Environmental Details Generators (Decorative Only)
+ */
+function spawnFloatingBarrel() {
+  const w = 12 + Math.random() * 4;
+  const h = 16 + Math.random() * 4;
+  barrels.push({
+    x: 15 + Math.random() * (seaCanvas.width - w - 30),
+    y: -h,
+    width: w,
+    height: h,
+    speed: 1.8 + Math.random() * 0.5,
+    rotation: (Math.random() - 0.5) * 0.4
+  });
+}
+
+function spawnSmallIsland() {
+  const w = 55 + Math.random() * 20;
+  const h = 40 + Math.random() * 15;
+  islands.push({
+    x: 10 + Math.random() * (seaCanvas.width - w - 20),
+    y: -h - 20,
+    width: w,
+    height: h,
+    speed: 1.1 + Math.random() * 0.3
+  });
+}
+
+function spawnSeagull() {
+  const fromLeft = Math.random() < 0.5;
+  seagulls.push({
+    x: fromLeft ? -20 : seaCanvas.width + 20,
+    y: 30 + Math.random() * (seaCanvas.height * 0.6),
+    vx: fromLeft ? (1.2 + Math.random() * 1.0) : (-1.2 - Math.random() * 1.0),
+    vy: (Math.random() - 0.5) * 0.4,
+    size: 10 + Math.random() * 5
   });
 }
 
@@ -401,13 +450,13 @@ function seaGameLoop() {
     playerShip.invulnerableTimer--;
   }
 
-  // 2. Progressive Spawning Timers (Slightly faster as score increases)
-  const rockSpawnInterval = Math.max(55, 80 - Math.floor(seaScore * 0.8));
-  const enemySpawnInterval = Math.max(65, 95 - Math.floor(seaScore * 1.0));
+  // 2. Progressive Spawning Timers & Environmental Elements
+  const rockSpawnInterval = Math.max(45, 70 - Math.floor(seaScore * 0.6));
+  const enemySpawnInterval = Math.max(70, 105 - Math.floor(seaScore * 1.0));
 
   spawnTimerRocks++;
   if (spawnTimerRocks >= rockSpawnInterval) {
-    spawnRockRow();
+    spawnScatteredRock();
     spawnTimerRocks = 0;
   }
 
@@ -415,6 +464,44 @@ function seaGameLoop() {
   if (spawnTimerEnemies >= enemySpawnInterval) {
     spawnEnemyShip();
     spawnTimerEnemies = 0;
+  }
+
+  // Decorative Environmental Spawns
+  spawnTimerBarrels++;
+  if (spawnTimerBarrels >= 110) {
+    spawnFloatingBarrel();
+    spawnTimerBarrels = 0;
+  }
+
+  spawnTimerIslands++;
+  if (spawnTimerIslands >= 420) {
+    spawnSmallIsland();
+    spawnTimerIslands = 0;
+  }
+
+  spawnTimerSeagulls++;
+  if (spawnTimerSeagulls >= 280) {
+    spawnSeagull();
+    spawnTimerSeagulls = 0;
+  }
+
+  // Update Environmental Decorative Elements
+  for (let i = barrels.length - 1; i >= 0; i--) {
+    barrels[i].y += barrels[i].speed;
+    if (barrels[i].y > seaCanvas.height + 30) barrels.splice(i, 1);
+  }
+
+  for (let i = islands.length - 1; i >= 0; i--) {
+    islands[i].y += islands[i].speed;
+    if (islands[i].y > seaCanvas.height + 80) islands.splice(i, 1);
+  }
+
+  for (let i = seagulls.length - 1; i >= 0; i--) {
+    seagulls[i].x += seagulls[i].vx;
+    seagulls[i].y += seagulls[i].vy;
+    if (seagulls[i].x < -40 || seagulls[i].x > seaCanvas.width + 40) {
+      seagulls.splice(i, 1);
+    }
   }
 
   // 3. Update Cannonballs & Collision with Rocks / Enemy Ships
@@ -634,7 +721,65 @@ function drawSeaBattleFrame() {
   // 1. Animated Ocean Sea Background
   drawOceanBackground(w, h);
 
-  // 2. Draw Individual Jagged Rock Boulders
+  // 2. Draw Decorative Small Islands
+  islands.forEach(isl => {
+    // Shore / Sand Base
+    seaCtx.fillStyle = '#e0c280';
+    seaCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    seaCtx.lineWidth = 2;
+    seaCtx.beginPath();
+    seaCtx.ellipse(isl.x + isl.width / 2, isl.y + isl.height / 2, isl.width / 2, isl.height / 2, 0, 0, Math.PI * 2);
+    seaCtx.fill();
+    seaCtx.stroke();
+
+    // Tropical Foliage Center
+    seaCtx.fillStyle = '#2d7a3a';
+    seaCtx.beginPath();
+    seaCtx.ellipse(isl.x + isl.width / 2, isl.y + isl.height / 2 - 2, isl.width * 0.35, isl.height * 0.35, 0, 0, Math.PI * 2);
+    seaCtx.fill();
+
+    // Palm Fronds Detail
+    seaCtx.strokeStyle = '#1e5e29';
+    seaCtx.lineWidth = 1.5;
+    const cx = isl.x + isl.width / 2;
+    const cy = isl.y + isl.height / 2 - 2;
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
+      seaCtx.beginPath();
+      seaCtx.moveTo(cx, cy);
+      seaCtx.lineTo(cx + Math.cos(a) * 12, cy + Math.sin(a) * 12);
+      seaCtx.stroke();
+    }
+  });
+
+  // 3. Draw Decorative Floating Barrels
+  barrels.forEach(b => {
+    seaCtx.save();
+    seaCtx.translate(b.x + b.width / 2, b.y + b.height / 2);
+    seaCtx.rotate(b.rotation);
+
+    // Wooden Barrel Body
+    seaCtx.fillStyle = '#8b5a2b';
+    seaCtx.strokeStyle = '#4a2c11';
+    seaCtx.lineWidth = 1;
+    seaCtx.beginPath();
+    seaCtx.ellipse(0, 0, b.width / 2, b.height / 2, 0, 0, Math.PI * 2);
+    seaCtx.fill();
+    seaCtx.stroke();
+
+    // Iron Hoops
+    seaCtx.strokeStyle = '#2b231d';
+    seaCtx.lineWidth = 1.5;
+    seaCtx.beginPath();
+    seaCtx.moveTo(-b.width * 0.4, -b.height * 0.25);
+    seaCtx.lineTo(b.width * 0.4, -b.height * 0.25);
+    seaCtx.moveTo(-b.width * 0.4, b.height * 0.25);
+    seaCtx.lineTo(b.width * 0.4, b.height * 0.25);
+    seaCtx.stroke();
+
+    seaCtx.restore();
+  });
+
+  // 4. Draw Scattered Individual Rock Boulders
   rocks.forEach(r => {
     seaCtx.fillStyle = '#2d251e';
     seaCtx.strokeStyle = '#18120d';
@@ -643,11 +788,11 @@ function drawSeaBattleFrame() {
     // Polygon Jagged Boulder Shape
     seaCtx.beginPath();
     seaCtx.moveTo(r.x + r.width * 0.2, r.y);
-    seaCtx.lineTo(r.x + r.width * 0.8, r.y + r.height * 0.1);
-    seaCtx.lineTo(r.x + r.width, r.y + r.height * 0.6);
-    seaCtx.lineTo(r.x + r.width * 0.7, r.y + r.height);
-    seaCtx.lineTo(r.x + r.width * 0.1, r.y + r.height * 0.9);
-    seaCtx.lineTo(r.x, r.y + r.height * 0.4);
+    seaCtx.lineTo(r.x + r.width * 0.85, r.y + r.height * 0.15);
+    seaCtx.lineTo(r.x + r.width, r.y + r.height * 0.65);
+    seaCtx.lineTo(r.x + r.width * 0.75, r.y + r.height);
+    seaCtx.lineTo(r.x + r.width * 0.15, r.y + r.height * 0.85);
+    seaCtx.lineTo(r.x, r.y + r.height * 0.35);
     seaCtx.closePath();
     seaCtx.fill();
     seaCtx.stroke();
@@ -655,7 +800,7 @@ function drawSeaBattleFrame() {
     // Boulder Highlights
     seaCtx.fillStyle = '#4a3d32';
     seaCtx.beginPath();
-    seaCtx.arc(r.x + r.width * 0.4, r.y + r.height * 0.4, Math.max(3, r.width * 0.2), 0, Math.PI * 2);
+    seaCtx.arc(r.x + r.width * 0.4, r.y + r.height * 0.4, Math.max(2.5, r.width * 0.2), 0, Math.PI * 2);
     seaCtx.fill();
 
     // Water Foam Base
@@ -757,6 +902,19 @@ function drawSeaBattleFrame() {
     seaCtx.arc(sp.x, sp.y, sp.radius, 0, Math.PI * 2);
     seaCtx.fill();
     seaCtx.globalAlpha = 1.0;
+  });
+
+  // 8. Draw Decorative Flying Seagulls
+  seagulls.forEach(g => {
+    seaCtx.strokeStyle = '#ffffff';
+    seaCtx.lineWidth = 1.8;
+    seaCtx.beginPath();
+
+    const wingFlap = Math.sin(oceanTime * 8) * 4;
+    seaCtx.moveTo(g.x - g.size, g.y + wingFlap);
+    seaCtx.quadraticCurveTo(g.x - g.size / 2, g.y - g.size / 2, g.x, g.y);
+    seaCtx.quadraticCurveTo(g.x + g.size / 2, g.y - g.size / 2, g.x + g.size, g.y + wingFlap);
+    seaCtx.stroke();
   });
 }
 
