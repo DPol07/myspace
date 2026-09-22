@@ -465,7 +465,7 @@ function initAmbientParticles() {
   let width = 0;
   let height = 0;
   let particles = [];
-  const PARTICLE_COUNT = 380; // Moderately increased count for noticeable but non-distracting atmospheric density
+  const DENSITY_PER_VIEWPORT = 380; // 380 particles per 800px viewport height
 
   // Palette definition: ~80% warm bronze/gold, ~20% soft neutral dust
   const goldColors = [
@@ -549,10 +549,27 @@ function initAmbientParticles() {
     };
   }
 
+  function getTargetParticleCount() {
+    const currentHeight = height || window.innerHeight || 800;
+    // Calculate proportional count based on full document height vs standard 800px viewport height
+    return Math.max(150, Math.round(DENSITY_PER_VIEWPORT * (currentHeight / 800)));
+  }
+
   function initParticleList() {
     particles = [];
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const targetCount = getTargetParticleCount();
+    for (let i = 0; i < targetCount; i++) {
       particles.push(createParticle(true));
+    }
+  }
+
+  function adjustParticleCountOnResize() {
+    const targetCount = getTargetParticleCount();
+    while (particles.length < targetCount) {
+      particles.push(createParticle(true));
+    }
+    if (particles.length > targetCount) {
+      particles.length = targetCount;
     }
   }
 
@@ -657,12 +674,14 @@ function initAmbientParticles() {
   // Listen for window resize and DOM height changes to keep canvas aligned
   window.addEventListener('resize', () => {
     resizeCanvas();
+    adjustParticleCountOnResize();
   });
 
   // Observe page height changes (e.g. when comments are added)
   if (window.ResizeObserver) {
     const resizeObserver = new ResizeObserver(() => {
       resizeCanvas();
+      adjustParticleCountOnResize();
     });
     resizeObserver.observe(document.body);
   }
