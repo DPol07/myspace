@@ -267,64 +267,70 @@ function fireCannonball() {
 }
 
 /**
- * Fair Rock Row Generator:
- * Generates a row of rock obstacles with a guaranteed readable, navigable gap
- * for the player. The gap width scales down gently with score, but remains
- * comfortably wider than the player's ship (min 60px vs 32px ship width).
+ * Individual Rock Generator:
+ * Generates groups of individual jagged rock boulders with a guaranteed readable,
+ * navigable gap for the Black Pearl.
  */
 function spawnRockRow() {
   const baseSpeed = 2.2 + Math.min(2.0, seaScore * 0.08);
 
-  // Progressive Gap Width: starts at 85px, decreases down to min 60px (ship is 32px wide)
-  const gapWidth = Math.max(60, 85 - Math.min(25, seaScore * 0.8));
+  // Progressive Gap Width: starts at 90px, decreases down to min 65px (ship is 32px wide)
+  const gapWidth = Math.max(65, 90 - Math.min(25, seaScore * 0.8));
 
-  // Ensure next gap position is within reasonable steering distance from last gap (max shift ±80px)
-  const maxShift = 75;
+  // Ensure next gap position is within reasonable steering distance from last gap
+  const maxShift = 70;
   let newGapX = lastGapX + (Math.random() * (maxShift * 2) - maxShift);
-  newGapX = Math.max(gapWidth / 2 + 15, Math.min(seaCanvas.width - gapWidth / 2 - 15, newGapX));
+  newGapX = Math.max(gapWidth / 2 + 25, Math.min(seaCanvas.width - gapWidth / 2 - 25, newGapX));
   lastGapX = newGapX;
 
   const gapLeft = newGapX - gapWidth / 2;
   const gapRight = newGapX + gapWidth / 2;
 
-  const rockHeight = 28 + Math.random() * 10;
-
-  // Left rock barrier block
-  if (gapLeft > 10) {
+  // Left side individual boulders
+  let currX = 5;
+  while (currX + 20 < gapLeft) {
+    const rockW = Math.min(32 + Math.random() * 16, gapLeft - currX);
+    if (rockW < 18) break;
+    const rockH = 24 + Math.random() * 12;
     rocks.push({
-      x: 0,
-      y: -rockHeight,
-      width: gapLeft,
-      height: rockHeight,
+      x: currX,
+      y: -rockH,
+      width: rockW,
+      height: rockH,
       speed: baseSpeed
     });
+    currX += rockW + 6 + Math.random() * 8; // Small space between distinct rock boulders
   }
 
-  // Right rock barrier block
-  if (seaCanvas.width - gapRight > 10) {
+  // Right side individual boulders
+  currX = gapRight;
+  while (currX < seaCanvas.width - 15) {
+    const rockW = Math.min(32 + Math.random() * 16, seaCanvas.width - 5 - currX);
+    if (rockW < 18) break;
+    const rockH = 24 + Math.random() * 12;
     rocks.push({
-      x: gapRight,
-      y: -rockHeight,
-      width: seaCanvas.width - gapRight,
-      height: rockHeight,
+      x: currX,
+      y: -rockH,
+      width: rockW,
+      height: rockH,
       speed: baseSpeed
     });
+    currX += rockW + 6 + Math.random() * 8;
   }
 }
 
 /**
- * Fair Enemy Ship Generator:
- * Spawns enemy ships at locations aligned with open water / clear paths so they
- * are always shootable and never spawned inside solid rock walls.
+ * Reachable Enemy Ship Generator:
+ * Spawns enemy ships directly inside open water corridors (the navigable gap channel)
+ * so every enemy ship is guaranteed reachable and shootable by the Black Pearl.
  */
 function spawnEnemyShip() {
   const enemyWidth = 28;
   const enemyHeight = 42;
 
-  // Align enemy ship spawn near current or recent navigable gap
-  const spawnMargin = 15;
-  let x = lastGapX - enemyWidth / 2 + (Math.random() * 40 - 20);
-  x = Math.max(spawnMargin, Math.min(seaCanvas.width - enemyWidth - spawnMargin, x));
+  // Always spawn inside open navigable water channel (lastGapX ± 15px)
+  let x = lastGapX - enemyWidth / 2 + (Math.random() * 30 - 15);
+  x = Math.max(15, Math.min(seaCanvas.width - enemyWidth - 15, x));
 
   const baseSpeed = 1.8 + Math.min(2.2, seaScore * 0.07);
 
@@ -628,24 +634,29 @@ function drawSeaBattleFrame() {
   // 1. Animated Ocean Sea Background
   drawOceanBackground(w, h);
 
-  // 2. Draw Rocks (Blocky jagged textures)
+  // 2. Draw Individual Jagged Rock Boulders
   rocks.forEach(r => {
     seaCtx.fillStyle = '#2d251e';
     seaCtx.strokeStyle = '#18120d';
     seaCtx.lineWidth = 2;
 
+    // Polygon Jagged Boulder Shape
     seaCtx.beginPath();
-    seaCtx.moveTo(r.x, r.y);
-    seaCtx.lineTo(r.x + r.width, r.y);
-    seaCtx.lineTo(r.x + r.width, r.y + r.height);
-    seaCtx.lineTo(r.x, r.y + r.height);
+    seaCtx.moveTo(r.x + r.width * 0.2, r.y);
+    seaCtx.lineTo(r.x + r.width * 0.8, r.y + r.height * 0.1);
+    seaCtx.lineTo(r.x + r.width, r.y + r.height * 0.6);
+    seaCtx.lineTo(r.x + r.width * 0.7, r.y + r.height);
+    seaCtx.lineTo(r.x + r.width * 0.1, r.y + r.height * 0.9);
+    seaCtx.lineTo(r.x, r.y + r.height * 0.4);
     seaCtx.closePath();
     seaCtx.fill();
     seaCtx.stroke();
 
-    // Rock Highlights
+    // Boulder Highlights
     seaCtx.fillStyle = '#4a3d32';
-    seaCtx.fillRect(r.x + 3, r.y + 3, r.width - 6, Math.max(3, r.height * 0.25));
+    seaCtx.beginPath();
+    seaCtx.arc(r.x + r.width * 0.4, r.y + r.height * 0.4, Math.max(3, r.width * 0.2), 0, Math.PI * 2);
+    seaCtx.fill();
 
     // Water Foam Base
     seaCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
