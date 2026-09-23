@@ -166,6 +166,8 @@ let rocks = [];
 let barrels = [];
 let islands = [];
 let seagulls = [];
+let fallingSeagulls = [];
+let splashEffects = [];
 let explosions = [];
 let rockShatters = [];
 
@@ -231,6 +233,8 @@ function startSeaBattle() {
   barrels = [];
   islands = [];
   seagulls = [];
+  fallingSeagulls = [];
+  splashEffects = [];
   explosions = [];
   rockShatters = [];
 
@@ -327,6 +331,36 @@ function spawnScatteredRock() {
       width: companionW,
       height: companionH,
       speed: baseSpeed
+    });
+  }
+}
+
+function createWaterSplashEffect(x, y) {
+  // Splash ring
+  splashEffects.push({
+    x: x,
+    y: y,
+    radius: 2,
+    maxRadius: 14 + Math.random() * 6,
+    life: 1.0,
+    decay: 0.04,
+    color: 'rgba(180, 235, 255, 0.8)'
+  });
+
+  // Upward water droplets
+  for (let i = 0; i < 8; i++) {
+    const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.4;
+    const speed = 1.2 + Math.random() * 2.5;
+    splashEffects.push({
+      x: x + (Math.random() - 0.5) * 4,
+      y: y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      gravity: 0.15,
+      radius: 1.2 + Math.random() * 1.5,
+      life: 1.0,
+      decay: 0.05 + Math.random() * 0.03,
+      color: Math.random() < 0.5 ? '#e0f7fa' : '#80deea'
     });
   }
 }
@@ -568,6 +602,38 @@ function seaGameLoop() {
     }
   }
 
+  // Update Falling Seagulls (Gravitational fall to water + Splash)
+  for (let i = fallingSeagulls.length - 1; i >= 0; i--) {
+    const fg = fallingSeagulls[i];
+    fg.x += fg.vx;
+    fg.vy += fg.gravity;
+    fg.y += fg.vy;
+    fg.rotation += fg.vRot;
+
+    // Check if reached water level or canvas bottom
+    if (fg.y >= fg.waterTargetY || fg.y >= seaCanvas.height - 20) {
+      createWaterSplashEffect(fg.x, fg.y);
+      fallingSeagulls.splice(i, 1);
+    }
+  }
+
+  // Update Splash Effects (Ripples & Water Droplets)
+  for (let i = splashEffects.length - 1; i >= 0; i--) {
+    const s = splashEffects[i];
+    if (s.maxRadius) {
+      // Ripple ring
+      s.radius += 0.6;
+      s.life -= s.decay;
+    } else {
+      // Droplet
+      s.x += s.vx;
+      s.vy += s.gravity;
+      s.y += s.vy;
+      s.life -= s.decay;
+    }
+    if (s.life <= 0) splashEffects.splice(i, 1);
+  }
+
   // 3. Update Cannonballs & Collision with Rocks / Enemy Ships
   for (let i = cannonballs.length - 1; i >= 0; i--) {
     const cb = cannonballs[i];
@@ -595,6 +661,47 @@ function seaGameLoop() {
         createExplosion(b.x + b.width / 2, b.y + b.height / 2);
         cannonballs.splice(i, 1);
         barrels.splice(bIdx, 1);
+        cbHit = true;
+        break;
+      }
+    }
+
+    if (cbHit) continue;
+
+    // Check collision with Seagulls (Knock seagull out of the sky)
+    for (let gIdx = seagulls.length - 1; gIdx >= 0; gIdx--) {
+      const g = seagulls[gIdx];
+      const gBox = { x: g.x - g.size, y: g.y - g.size, width: g.size * 2, height: g.size * 2 };
+      if (checkPointInAABB(cb.x, cb.y, gBox)) {
+        // Convert seagull to falling seagull
+        fallingSeagulls.push({
+          x: g.x,
+          y: g.y,
+          vx: g.vx * 0.4,
+          vy: -1.5, // Initial small upward pop from impact
+          gravity: 0.22,
+          rotation: 0,
+          vRot: (Math.random() < 0.5 ? 1 : -1) * (0.15 + Math.random() * 0.1),
+          size: g.size,
+          waterTargetY: g.y + 40 + Math.random() * 60 // Water splash level relative to fall
+        });
+
+        // Small puff of feathers / sparks on impact
+        for (let fp = 0; fp < 5; fp++) {
+          rockShatters.push({
+            x: g.x,
+            y: g.y,
+            vx: (Math.random() - 0.5) * 2,
+            vy: (Math.random() - 0.5) * 2,
+            radius: 1.2 + Math.random() * 1.5,
+            life: 0.8,
+            decay: 0.05,
+            color: '#ffffff'
+          });
+        }
+
+        cannonballs.splice(i, 1);
+        seagulls.splice(gIdx, 1);
         cbHit = true;
         break;
       }
@@ -1095,6 +1202,41 @@ function drawSeaBattleFrame() {
     seaCtx.quadraticCurveTo(g.x - g.size / 2, g.y - g.size / 2, g.x, g.y);
     seaCtx.quadraticCurveTo(g.x + g.size / 2, g.y - g.size / 2, g.x + g.size, g.y + wingFlap);
     seaCtx.stroke();
+  });
+
+  // 9. Draw Falling Seagulls
+  fallingSeagulls.forEach(fg => {
+    seaCtx.save();
+    seaCtx.translate(fg.x, fg.y);
+    seaCtx.rotate(fg.rotation);
+    seaCtx.strokeStyle = '#e0e0e0';
+    seaCtx.lineWidth = 1.8;
+    seaCtx.beginPath();
+    seaCtx.moveTo(-fg.size * 0.8, -fg.size * 0.4);
+    seaCtx.lineTo(0, 0);
+    seaCtx.lineTo(fg.size * 0.8, -fg.size * 0.4);
+    seaCtx.stroke();
+    seaCtx.restore();
+  });
+
+  // 10. Draw Water Splash Effects
+  splashEffects.forEach(s => {
+    seaCtx.globalAlpha = Math.max(0, s.life);
+    if (s.maxRadius) {
+      // Ring ripple
+      seaCtx.strokeStyle = s.color;
+      seaCtx.lineWidth = 1.5;
+      seaCtx.beginPath();
+      seaCtx.ellipse(s.x, s.y, s.radius, s.radius * 0.4, 0, 0, Math.PI * 2);
+      seaCtx.stroke();
+    } else {
+      // Water droplet
+      seaCtx.fillStyle = s.color;
+      seaCtx.beginPath();
+      seaCtx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+      seaCtx.fill();
+    }
+    seaCtx.globalAlpha = 1.0;
   });
 }
 
