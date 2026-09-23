@@ -217,10 +217,11 @@ let seaHighScore = 0;
 let playerShip = {
   x: 150,
   y: 350,
-  width: 44,
-  height: 64,
+  width: 38,
+  height: 56,
   speed: 9.6,
   vx: 0,
+  vy: 0,
   maxSpeed: 9.8,
   accel: 1.4,
   friction: 0.75,
@@ -230,6 +231,8 @@ let playerShip = {
 let keyState = {
   left: false,
   right: false,
+  up: false,
+  down: false,
   space: false
 };
 
@@ -293,6 +296,12 @@ function initSeaBattle() {
     } else if (e.key === 'ArrowRight') {
       keyState.right = true;
       if (seaGameActive) e.preventDefault();
+    } else if (e.key === 'ArrowUp') {
+      keyState.up = true;
+      if (seaGameActive) e.preventDefault();
+    } else if (e.key === 'ArrowDown') {
+      keyState.down = true;
+      if (seaGameActive) e.preventDefault();
     } else if (e.key === ' ' || e.key === 'Spacebar') {
       keyState.space = true;
       if (seaGameActive) e.preventDefault();
@@ -302,6 +311,8 @@ function initSeaBattle() {
   window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowLeft') keyState.left = false;
     else if (e.key === 'ArrowRight') keyState.right = false;
+    else if (e.key === 'ArrowUp') keyState.up = false;
+    else if (e.key === 'ArrowDown') keyState.down = false;
     else if (e.key === ' ' || e.key === 'Spacebar') keyState.space = false;
   });
 
@@ -317,6 +328,7 @@ function startSeaBattle() {
   playerShip.x = seaCanvas.width / 2 - playerShip.width / 2;
   playerShip.y = seaCanvas.height - 82;
   playerShip.vx = 0;
+  playerShip.vy = 0;
   playerShip.invulnerableTimer = 0;
 
   cannonballs = [];
@@ -654,7 +666,7 @@ function seaGameLoop() {
 
   oceanTime += 0.05;
 
-  // 1. Update Player Movement & Firing (Smooth Velocity-based Steering)
+  // 1. Update Player Movement & Firing (Omnidirectional 4-Way Arrow Key Controls)
   if (keyState.left) {
     playerShip.vx -= playerShip.accel;
   }
@@ -664,16 +676,34 @@ function seaGameLoop() {
   if (!keyState.left && !keyState.right) {
     playerShip.vx *= playerShip.friction;
   } else {
-    playerShip.vx *= 0.88; // subtle velocity dampening under active input
+    playerShip.vx *= 0.88;
+  }
+
+  if (keyState.up) {
+    playerShip.vy -= playerShip.accel;
+  }
+  if (keyState.down) {
+    playerShip.vy += playerShip.accel;
+  }
+  if (!keyState.up && !keyState.down) {
+    playerShip.vy *= playerShip.friction;
+  } else {
+    playerShip.vy *= 0.88;
   }
 
   // Clamp velocity to max responsive speed
   if (playerShip.vx > playerShip.maxSpeed) playerShip.vx = playerShip.maxSpeed;
   if (playerShip.vx < -playerShip.maxSpeed) playerShip.vx = -playerShip.maxSpeed;
+  if (playerShip.vy > playerShip.maxSpeed) playerShip.vy = playerShip.maxSpeed;
+  if (playerShip.vy < -playerShip.maxSpeed) playerShip.vy = -playerShip.maxSpeed;
 
   if (Math.abs(playerShip.vx) < 0.05) playerShip.vx = 0;
+  if (Math.abs(playerShip.vy) < 0.05) playerShip.vy = 0;
 
   playerShip.x += playerShip.vx;
+  playerShip.y += playerShip.vy;
+
+  // Boundary clamping to keep Black Pearl inside the sea canvas playfield
   if (playerShip.x < 5) {
     playerShip.x = 5;
     playerShip.vx = 0;
@@ -681,6 +711,14 @@ function seaGameLoop() {
   if (playerShip.x > seaCanvas.width - playerShip.width - 5) {
     playerShip.x = seaCanvas.width - playerShip.width - 5;
     playerShip.vx = 0;
+  }
+  if (playerShip.y < 15) {
+    playerShip.y = 15;
+    playerShip.vy = 0;
+  }
+  if (playerShip.y > seaCanvas.height - playerShip.height - 10) {
+    playerShip.y = seaCanvas.height - playerShip.height - 10;
+    playerShip.vy = 0;
   }
   if (keyState.space) {
     fireCannonball();
@@ -1568,11 +1606,11 @@ function drawSeaBattleFrame() {
     seaCtx.strokeRect(r.x - 2, r.y + r.height - 2, r.width + 4, 3);
   });
 
-  // 3. Draw Enemy Ships (Red Sails)
+  // 3. Draw Enemy Ships (Royal Navy Warships)
   enemyShips.forEach(e => {
-    // Ship Hull
-    seaCtx.fillStyle = '#3a2010';
-    seaCtx.strokeStyle = '#201005';
+    // Darker Royal Navy Mahogany/Navy Hull
+    seaCtx.fillStyle = '#0f172a';
+    seaCtx.strokeStyle = '#d4af37';
     seaCtx.lineWidth = 1.5;
 
     seaCtx.beginPath();
@@ -1585,16 +1623,38 @@ function drawSeaBattleFrame() {
     seaCtx.fill();
     seaCtx.stroke();
 
-    // Red Sails
-    seaCtx.fillStyle = '#b91c1c';
-    seaCtx.fillRect(e.x + 3, e.y + e.height * 0.25, e.width - 6, e.height * 0.35);
+    // Golden Navy Stripe
+    seaCtx.fillStyle = '#f59e0b';
+    seaCtx.fillRect(e.x + 2, e.y + e.height * 0.55, e.width - 4, 3);
+
+    // Gunports along Hull Sides
+    seaCtx.fillStyle = '#020617';
+    for (let gp = 0; gp < 3; gp++) {
+      seaCtx.fillRect(e.x + 4 + gp * 10, e.y + e.height * 0.62, 4, 3);
+    }
+
+    // Royal Navy White Canvas Sails
+    seaCtx.fillStyle = '#f8fafc';
+    seaCtx.strokeStyle = '#64748b';
+    seaCtx.lineWidth = 1;
+    seaCtx.fillRect(e.x + 3, e.y + e.height * 0.22, e.width - 6, e.height * 0.32);
+    seaCtx.strokeRect(e.x + 3, e.y + e.height * 0.22, e.width - 6, e.height * 0.32);
 
     // Mast
-    seaCtx.fillStyle = '#f59e0b';
+    seaCtx.fillStyle = '#b45309';
     seaCtx.fillRect(e.x + e.width / 2 - 1, e.y + 2, 2, e.height * 0.7);
+
+    // Royal Navy Ensign Flag at Bow/Mast (White flag with red Cross of St George & blue canton)
+    seaCtx.fillStyle = '#ffffff';
+    seaCtx.fillRect(e.x + e.width / 2 + 1, e.y + 2, 10, 6);
+    seaCtx.fillStyle = '#1e3a8a';
+    seaCtx.fillRect(e.x + e.width / 2 + 1, e.y + 2, 4, 3);
+    seaCtx.fillStyle = '#dc2626';
+    seaCtx.fillRect(e.x + e.width / 2 + 5, e.y + 2, 2, 6);
+    seaCtx.fillRect(e.x + e.width / 2 + 1, e.y + 4, 10, 2);
   });
 
-  // Draw Flipping Enemy Ships (Physical Side Impact Knock-over Animation)
+  // Draw Flipping Enemy Ships (Royal Navy Capsizing Hull Animation)
   flippingShips.forEach(fs => {
     seaCtx.save();
     seaCtx.globalAlpha = Math.max(0, fs.life);
@@ -1602,9 +1662,9 @@ function drawSeaBattleFrame() {
     seaCtx.rotate(fs.rotation);
     seaCtx.scale(fs.scale, fs.scale * Math.cos(fs.rotation * 0.8));
 
-    // Capsized Ship Hull (Keel / Bottom)
-    seaCtx.fillStyle = '#261408';
-    seaCtx.strokeStyle = '#d4af37';
+    // Capsized Royal Navy Hull
+    seaCtx.fillStyle = '#020617';
+    seaCtx.strokeStyle = '#f59e0b';
     seaCtx.lineWidth = 1.5;
 
     seaCtx.beginPath();
