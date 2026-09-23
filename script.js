@@ -245,6 +245,14 @@ function startSeaBattle() {
   const overlay = document.getElementById('sea-battle-overlay');
   if (overlay) overlay.classList.add('hidden');
 
+  // Move custom hook cursor outside the game panel so it doesn't obscure gameplay
+  const customCursor = document.getElementById('custom-pirate-cursor');
+  if (customCursor) {
+    const tipOffsetX = 5;
+    const tipOffsetY = 4;
+    customCursor.style.transform = `translate3d(${20 - tipOffsetX}px, ${20 - tipOffsetY}px, 0)`;
+  }
+
   requestAnimationFrame(seaGameLoop);
 }
 
@@ -325,21 +333,37 @@ function spawnScatteredRock() {
 
 /**
  * Reachable Enemy Ship Generator:
- * Spawns enemy ships at random open-water positions across the sea.
+ * Spawns enemy ships at positions across the sea that are NOT blocked in line-of-sight
+ * by any rocks currently on screen between the top and player ship level.
  */
 function spawnEnemyShip() {
   const enemyWidth = 28;
   const enemyHeight = 42;
 
-  let x = 20 + Math.random() * (seaCanvas.width - enemyWidth - 40);
+  // Find all rocks currently on screen above player ship line
+  const blockingRocks = rocks.filter(r => r.y >= -20 && r.y < playerShip.y - 30);
 
-  // Ensure ship doesn't spawn directly on top of a rock at top of screen
-  const topRocks = rocks.filter(r => r.y < 50);
-  for (let r of topRocks) {
-    if (x < r.x + r.width + 10 && x + enemyWidth > r.x - 10) {
-      x = (r.x + r.width + 25) % (seaCanvas.width - enemyWidth - 20);
-      if (x < 15) x = 15;
+  // Helper to test if an enemy at candidate X is completely blocked by a rock in vertical cannon line
+  function isBlockedByRock(candidateX) {
+    const eLeft = candidateX;
+    const eRight = candidateX + enemyWidth;
+    for (let r of blockingRocks) {
+      const rLeft = r.x;
+      const rRight = r.x + r.width;
+      // If rock completely covers the enemy ship width along line of fire
+      if (rLeft <= eLeft + 4 && rRight >= eRight - 4) {
+        return true;
+      }
     }
+    return false;
+  }
+
+  let x = 20 + Math.random() * (seaCanvas.width - enemyWidth - 40);
+  let attempts = 0;
+
+  while (isBlockedByRock(x) && attempts < 15) {
+    x = 20 + Math.random() * (seaCanvas.width - enemyWidth - 40);
+    attempts++;
   }
 
   const baseSpeed = 1.8 + Math.min(2.2, seaScore * 0.07);
