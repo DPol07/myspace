@@ -336,7 +336,8 @@ function spawnScatteredRock() {
     y: -rockH,
     width: rockW,
     height: rockH,
-    speed: baseSpeed
+    speed: baseSpeed,
+    hits: 0
   });
 
   // 25% chance to spawn a small adjacent companion rock (small cluster)
@@ -351,7 +352,8 @@ function spawnScatteredRock() {
       y: -rockH + (Math.random() * 8 - 4),
       width: companionW,
       height: companionH,
-      speed: baseSpeed
+      speed: baseSpeed,
+      hits: 0
     });
   }
 }
@@ -689,11 +691,55 @@ function seaGameLoop() {
 
     let cbHit = false;
 
-    // Check collision with Rocks (Rocks BLOCK cannonballs)
-    for (let rIdx = 0; rIdx < rocks.length; rIdx++) {
+    // Check collision with Rocks (3 Hits to Destroy, 0 Points)
+    for (let rIdx = rocks.length - 1; rIdx >= 0; rIdx--) {
       const r = rocks[rIdx];
       if (checkPointInAABB(cb.x, cb.y, r)) {
-        createRockShatterEffect(cb.x, cb.y);
+        r.hits = (r.hits || 0) + 1;
+
+        if (r.hits < 3) {
+          // 1st & 2nd Hit: Sparks and rock chips
+          createRockShatterEffect(cb.x, cb.y);
+        } else {
+          // 3rd Hit: Rock disintegrates, collapses and sinks into the sea
+          createWaterSplashEffect(r.x + r.width / 2, r.y + r.height / 2);
+
+          // Flying rock chunks debris
+          for (let sp = 0; sp < 16; sp++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 1.2 + Math.random() * 3.8;
+            rockShatters.push({
+              x: r.x + r.width / 2,
+              y: r.y + r.height / 2,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed - 0.5,
+              radius: 1.8 + Math.random() * 3.2,
+              life: 1.0,
+              decay: 0.03 + Math.random() * 0.03,
+              color: Math.random() < 0.5 ? '#2d251e' : (Math.random() < 0.5 ? '#4a3d32' : '#8c7865')
+            });
+          }
+
+          // Small rising underwater dust cloud
+          for (let sm = 0; sm < 4; sm++) {
+            explosions.push({
+              type: 'smoke',
+              x: r.x + r.width / 2 + (Math.random() - 0.5) * 10,
+              y: r.y + r.height / 2,
+              vx: (Math.random() - 0.5) * 0.5,
+              vy: -0.2 - Math.random() * 0.3,
+              radius: 4 + Math.random() * 3,
+              grow: 0.1,
+              life: 0.8,
+              decay: 0.03,
+              color: 'rgba(120, 110, 100, 0.5)'
+            });
+          }
+
+          // Remove destroyed rock from playfield (0 points awarded)
+          rocks.splice(rIdx, 1);
+        }
+
         cannonballs.splice(i, 1);
         cbHit = true;
         break;
@@ -1256,7 +1302,7 @@ function drawSeaBattleFrame() {
     seaCtx.restore();
   });
 
-  // 4. Draw Scattered Individual Rock Boulders
+  // 4. Draw Scattered Individual Rock Boulders with Visible Crack Damage States
   rocks.forEach(r => {
     seaCtx.fillStyle = '#2d251e';
     seaCtx.strokeStyle = '#18120d';
@@ -1279,6 +1325,54 @@ function drawSeaBattleFrame() {
     seaCtx.beginPath();
     seaCtx.arc(r.x + r.width * 0.4, r.y + r.height * 0.4, Math.max(2.5, r.width * 0.2), 0, Math.PI * 2);
     seaCtx.fill();
+
+    // Crack overlays based on damage level
+    if (r.hits === 1) {
+      // Hit 1: Fine dark fracture lines radiating across the boulder face
+      seaCtx.strokeStyle = '#0d0906';
+      seaCtx.lineWidth = 1.5;
+      seaCtx.beginPath();
+      // Main crack line
+      seaCtx.moveTo(r.x + r.width * 0.3, r.y + r.height * 0.2);
+      seaCtx.lineTo(r.x + r.width * 0.5, r.y + r.height * 0.5);
+      seaCtx.lineTo(r.x + r.width * 0.45, r.y + r.height * 0.8);
+      // Side branch
+      seaCtx.moveTo(r.x + r.width * 0.5, r.y + r.height * 0.5);
+      seaCtx.lineTo(r.x + r.width * 0.75, r.y + r.height * 0.45);
+      seaCtx.stroke();
+
+      // Highlight line alongside crack
+      seaCtx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      seaCtx.lineWidth = 0.8;
+      seaCtx.beginPath();
+      seaCtx.moveTo(r.x + r.width * 0.32, r.y + r.height * 0.2);
+      seaCtx.lineTo(r.x + r.width * 0.52, r.y + r.height * 0.5);
+      seaCtx.stroke();
+
+    } else if (r.hits === 2) {
+      // Hit 2: Deep, wide jagged fissures with chipped rock edges
+      seaCtx.strokeStyle = '#050302';
+      seaCtx.lineWidth = 2.8;
+      seaCtx.beginPath();
+      // Primary deep fissure
+      seaCtx.moveTo(r.x + r.width * 0.25, r.y + r.height * 0.15);
+      seaCtx.lineTo(r.x + r.width * 0.48, r.y + r.height * 0.45);
+      seaCtx.lineTo(r.x + r.width * 0.4, r.y + r.height * 0.85);
+      // Secondary cross fissure
+      seaCtx.moveTo(r.x + r.width * 0.15, r.y + r.height * 0.55);
+      seaCtx.lineTo(r.x + r.width * 0.48, r.y + r.height * 0.45);
+      seaCtx.lineTo(r.x + r.width * 0.85, r.y + r.height * 0.35);
+      seaCtx.stroke();
+
+      // Bright chipped stone edge highlights showing deep structural damage
+      seaCtx.strokeStyle = 'rgba(215, 200, 180, 0.5)';
+      seaCtx.lineWidth = 1.2;
+      seaCtx.beginPath();
+      seaCtx.moveTo(r.x + r.width * 0.27, r.y + r.height * 0.15);
+      seaCtx.lineTo(r.x + r.width * 0.5, r.y + r.height * 0.45);
+      seaCtx.lineTo(r.x + r.width * 0.87, r.y + r.height * 0.35);
+      seaCtx.stroke();
+    }
 
     // Water Foam Base
     seaCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
