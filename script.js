@@ -386,24 +386,45 @@ function fireCannonball() {
 
 /**
  * Scattered Rocks Generator:
- * Spawns individual rocks scattered irregularly across the open sea with varied sizes,
- * positions, and occasional small clusters, leaving wide open water for clear navigation.
+ * Spawns individual rocks scattered irregularly across the open sea, starting gently
+ * and guaranteeing a clear, navigable passage for the Black Pearl at all times.
  */
 function spawnScatteredRock() {
-  const baseSpeed = 2.0 + Math.min(1.8, seaScore * 0.07);
-  const rockW = 26 + Math.random() * 24; // 26px - 50px wide
-  const rockH = 24 + Math.random() * 22; // 24px - 46px tall
+  // Fair, progressive speed scaling starting slow (1.2px/frame)
+  const baseSpeed = 1.2 + Math.min(2.0, seaScore * 0.08);
+  const rockW = 26 + Math.random() * 24;
+  const rockH = 24 + Math.random() * 22;
 
-  // Pick a random X position on canvas
+  // Ensure there is always a guaranteed safe gap (> 80px wide) across all obstacles at the top level
   let x = 20 + Math.random() * (seaCanvas.width - rockW - 40);
 
-  // Avoid placing directly over an existing top rock
-  const topRocks = rocks.filter(r => r.y < 50);
-  for (let r of topRocks) {
-    if (Math.abs((x + rockW / 2) - (r.x + r.width / 2)) < 75) {
-      x = (r.x + r.width + 80) % (seaCanvas.width - rockW - 40);
-      if (x < 20) x = 20;
+  // Check top obstacles (rocks, islands, barrels) to prevent walling off the player
+  const topObstacles = [
+    ...rocks.filter(r => r.y < 90),
+    ...islands.filter(i => i.y < 120),
+    ...barrels.filter(b => b.y < 80)
+  ];
+
+  let attempts = 0;
+  while (attempts < 15) {
+    let createsTotalBlockade = false;
+    const testLeft = x;
+    const testRight = x + rockW;
+
+    for (let obs of topObstacles) {
+      const obsLeft = obs.x;
+      const obsRight = obs.x + obs.width;
+      // If gap between new rock and existing top obstacle is too narrow for Black Pearl (player ship width ~44px)
+      const gap = Math.max(0, Math.max(testLeft - obsRight, obsLeft - testRight));
+      if (gap > 0 && gap < 75) {
+        createsTotalBlockade = true;
+        break;
+      }
     }
+
+    if (!createsTotalBlockade) break;
+    x = 20 + Math.random() * (seaCanvas.width - rockW - 40);
+    attempts++;
   }
 
   rocks.push({
@@ -415,21 +436,23 @@ function spawnScatteredRock() {
     hits: 0
   });
 
-  // 25% chance to spawn a small adjacent companion rock (small cluster)
-  if (Math.random() < 0.25) {
-    const companionW = 20 + Math.random() * 16;
-    const companionH = 20 + Math.random() * 16;
-    const offsetX = Math.random() < 0.5 ? (rockW - 6) : (-companionW + 6);
-    const companionX = Math.max(10, Math.min(seaCanvas.width - companionW - 10, x + offsetX));
+  // Only spawn companion rock if game progressed past 2 points and space allows
+  if (seaScore >= 2 && Math.random() < 0.20) {
+    const companionW = 18 + Math.random() * 14;
+    const companionH = 18 + Math.random() * 14;
+    const offsetX = Math.random() < 0.5 ? (rockW + 6) : (-companionW - 6);
+    const companionX = x + offsetX;
 
-    rocks.push({
-      x: companionX,
-      y: -rockH + (Math.random() * 8 - 4),
-      width: companionW,
-      height: companionH,
-      speed: baseSpeed,
-      hits: 0
-    });
+    if (companionX >= 15 && companionX <= seaCanvas.width - companionW - 15) {
+      rocks.push({
+        x: companionX,
+        y: -rockH + (Math.random() * 6 - 3),
+        width: companionW,
+        height: companionH,
+        speed: baseSpeed,
+        hits: 0
+      });
+    }
   }
 }
 
@@ -498,7 +521,8 @@ function spawnEnemyShip() {
     attempts++;
   }
 
-  const baseSpeed = 1.8 + Math.min(2.2, seaScore * 0.07);
+  // Progressive enemy speed starting slow and manageable
+  const baseSpeed = 1.1 + Math.min(2.0, seaScore * 0.08);
 
   enemyShips.push({
     x: x,
@@ -666,9 +690,9 @@ function seaGameLoop() {
     playerShip.invulnerableTimer--;
   }
 
-  // 2. Progressive Spawning Timers & Environmental Elements
-  const rockSpawnInterval = Math.max(45, 70 - Math.floor(seaScore * 0.6));
-  const enemySpawnInterval = Math.max(70, 105 - Math.floor(seaScore * 1.0));
+  // 2. Progressive Spawning Timers starting noticeably relaxed early on
+  const rockSpawnInterval = Math.max(50, 110 - Math.floor(seaScore * 4.5));
+  const enemySpawnInterval = Math.max(80, 150 - Math.floor(seaScore * 6.0));
 
   spawnTimerRocks++;
   if (spawnTimerRocks >= rockSpawnInterval) {
@@ -1029,63 +1053,87 @@ function seaGameLoop() {
       continue;
     }
 
-    // Check direct collision with player (Side Ramming / Ship-Flipping Mechanics)
+    // Check direct collision with player (Side Ramming vs Head-on Damage)
     if (checkAABBCollision(playerShip, e)) {
       const pCenter = playerShip.x + playerShip.width / 2;
       const eCenter = e.x + e.width / 2;
 
-      // Determine if collision is a side impact (Player bow level is aligned with or hitting the enemy ship body)
-      // Hit right side of enemy ship -> flip left (-1). Hit left side -> flip right (+1)
-      const flipDir = pCenter >= eCenter ? -1 : 1;
+      // Calculate horizontal overlap and vertical overlap between Black Pearl and Enemy Ship
+      const overlapX = Math.min(playerShip.x + playerShip.width, e.x + e.width) - Math.max(playerShip.x, e.x);
+      const overlapY = Math.min(playerShip.y + playerShip.height, e.y + e.height) - Math.max(playerShip.y, e.y);
 
-      // Trigger side-impact physical ship flip
-      flippingShips.push({
-        x: e.x + e.width / 2,
-        y: e.y + e.height / 2,
-        width: e.width,
-        height: e.height,
-        rotation: 0,
-        flipDir: flipDir,
-        rollSpeed: flipDir * 0.14,
-        vx: flipDir * 2.8,
-        vy: -1.2,
-        scale: 1.0,
-        life: 1.0,
-        decay: 0.035
-      });
+      // Require a substantial predominantly side-to-side collision (significant lateral offset & side velocity or side overlap dominance)
+      const horizontalOffset = Math.abs(pCenter - eCenter);
+      const isSideCollision = (horizontalOffset > e.width * 0.22 || Math.abs(playerShip.vx) > 1.2) && (overlapY > overlapX * 0.5);
 
-      // Spawn water splash & wood splinter debris
-      createWaterSplashEffect(e.x + e.width / 2, e.y + e.height / 2);
-      for (let sp = 0; sp < 8; sp++) {
-        rockShatters.push({
+      if (isSideCollision) {
+        // Substantial side collision -> Flip the ship!
+        // Hit right side of enemy ship (pCenter > eCenter) -> flip left (-1). Hit left side -> flip right (+1)
+        const flipDir = pCenter >= eCenter ? -1 : 1;
+
+        // Trigger side-impact physical ship flip
+        flippingShips.push({
           x: e.x + e.width / 2,
           y: e.y + e.height / 2,
-          vx: (Math.random() - 0.5) * 3,
-          vy: (Math.random() - 0.5) * 3,
-          radius: 1.5 + Math.random() * 2,
-          life: 0.8,
-          decay: 0.04,
-          color: '#3a2010'
+          width: e.width,
+          height: e.height,
+          rotation: 0,
+          flipDir: flipDir,
+          rollSpeed: flipDir * 0.14,
+          vx: flipDir * 2.8,
+          vy: -1.2,
+          scale: 1.0,
+          life: 1.0,
+          decay: 0.035
         });
+
+        // Spawn water splash & wood splinter debris
+        createWaterSplashEffect(e.x + e.width / 2, e.y + e.height / 2);
+        for (let sp = 0; sp < 8; sp++) {
+          rockShatters.push({
+            x: e.x + e.width / 2,
+            y: e.y + e.height / 2,
+            vx: (Math.random() - 0.5) * 3,
+            vy: (Math.random() - 0.5) * 3,
+            radius: 1.5 + Math.random() * 2,
+            life: 0.8,
+            decay: 0.04,
+            color: '#3a2010'
+          });
+        }
+
+        // Floating +1 Score Feedback
+        scorePopups.push({
+          x: e.x + e.width / 2,
+          y: e.y - 10,
+          vy: -1.2,
+          life: 1.0,
+          decay: 0.025,
+          text: '+1'
+        });
+
+        // Award +1 Score
+        seaScore += 1;
+        updateSeaHUD();
+
+        // Remove enemy ship without taking damage
+        enemyShips.splice(i, 1);
+        continue;
+      } else {
+        // Mostly head-on collision -> Costs 1 Life
+        if (playerShip.invulnerableTimer === 0) {
+          seaLives--;
+          updateSeaHUD();
+          playerShip.invulnerableTimer = 60;
+          createExplosion(e.x + e.width / 2, e.y + e.height / 2);
+          enemyShips.splice(i, 1);
+
+          if (seaLives <= 0) {
+            triggerSeaGameOver("Collided head-on with an enemy flagship!");
+            return;
+          }
+        }
       }
-
-      // Floating +1 Score Feedback
-      scorePopups.push({
-        x: e.x + e.width / 2,
-        y: e.y - 10,
-        vy: -1.2,
-        life: 1.0,
-        decay: 0.025,
-        text: '+1'
-      });
-
-      // Award +1 Score
-      seaScore += 1;
-      updateSeaHUD();
-
-      // Remove enemy ship from active enemies without reducing player lives
-      enemyShips.splice(i, 1);
-      continue;
     }
   }
 
