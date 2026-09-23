@@ -235,6 +235,7 @@ let keyState = {
 
 let cannonballs = [];
 let enemyShips = [];
+let flippingShips = [];
 let rocks = [];
 let barrels = [];
 let islands = [];
@@ -320,6 +321,7 @@ function startSeaBattle() {
 
   cannonballs = [];
   enemyShips = [];
+  flippingShips = [];
   rocks = [];
   barrels = [];
   islands = [];
@@ -1027,18 +1029,78 @@ function seaGameLoop() {
       continue;
     }
 
-    // Check direct collision with player
-    if (playerShip.invulnerableTimer === 0 && checkAABBCollision(playerShip, e)) {
-      seaLives--;
-      updateSeaHUD();
-      playerShip.invulnerableTimer = 60;
-      createExplosion(e.x + e.width / 2, e.y + e.height / 2);
-      enemyShips.splice(i, 1);
+    // Check direct collision with player (Side Ramming / Ship-Flipping Mechanics)
+    if (checkAABBCollision(playerShip, e)) {
+      const pCenter = playerShip.x + playerShip.width / 2;
+      const eCenter = e.x + e.width / 2;
 
-      if (seaLives <= 0) {
-        triggerSeaGameOver("Collided with an enemy flagship!");
-        return;
+      // Determine if collision is a side impact (Player bow level is aligned with or hitting the enemy ship body)
+      // Hit right side of enemy ship -> flip left (-1). Hit left side -> flip right (+1)
+      const flipDir = pCenter >= eCenter ? -1 : 1;
+
+      // Trigger side-impact physical ship flip
+      flippingShips.push({
+        x: e.x + e.width / 2,
+        y: e.y + e.height / 2,
+        width: e.width,
+        height: e.height,
+        rotation: 0,
+        flipDir: flipDir,
+        rollSpeed: flipDir * 0.14,
+        vx: flipDir * 2.8,
+        vy: -1.2,
+        scale: 1.0,
+        life: 1.0,
+        decay: 0.035
+      });
+
+      // Spawn water splash & wood splinter debris
+      createWaterSplashEffect(e.x + e.width / 2, e.y + e.height / 2);
+      for (let sp = 0; sp < 8; sp++) {
+        rockShatters.push({
+          x: e.x + e.width / 2,
+          y: e.y + e.height / 2,
+          vx: (Math.random() - 0.5) * 3,
+          vy: (Math.random() - 0.5) * 3,
+          radius: 1.5 + Math.random() * 2,
+          life: 0.8,
+          decay: 0.04,
+          color: '#3a2010'
+        });
       }
+
+      // Floating +1 Score Feedback
+      scorePopups.push({
+        x: e.x + e.width / 2,
+        y: e.y - 10,
+        vy: -1.2,
+        life: 1.0,
+        decay: 0.025,
+        text: '+1'
+      });
+
+      // Award +1 Score
+      seaScore += 1;
+      updateSeaHUD();
+
+      // Remove enemy ship from active enemies without reducing player lives
+      enemyShips.splice(i, 1);
+      continue;
+    }
+  }
+
+  // Update Flipping Ships Animation Physics
+  for (let i = flippingShips.length - 1; i >= 0; i--) {
+    const fs = flippingShips[i];
+    fs.x += fs.vx;
+    fs.y += fs.vy;
+    fs.rotation += fs.rollSpeed;
+    fs.scale = Math.max(0.2, fs.scale - 0.02);
+    fs.life -= fs.decay;
+
+    if (fs.life <= 0) {
+      createWaterSplashEffect(fs.x, fs.y);
+      flippingShips.splice(i, 1);
     }
   }
 
@@ -1482,6 +1544,39 @@ function drawSeaBattleFrame() {
     // Mast
     seaCtx.fillStyle = '#f59e0b';
     seaCtx.fillRect(e.x + e.width / 2 - 1, e.y + 2, 2, e.height * 0.7);
+  });
+
+  // Draw Flipping Enemy Ships (Physical Side Impact Knock-over Animation)
+  flippingShips.forEach(fs => {
+    seaCtx.save();
+    seaCtx.globalAlpha = Math.max(0, fs.life);
+    seaCtx.translate(fs.x, fs.y);
+    seaCtx.rotate(fs.rotation);
+    seaCtx.scale(fs.scale, fs.scale * Math.cos(fs.rotation * 0.8));
+
+    // Capsized Ship Hull (Keel / Bottom)
+    seaCtx.fillStyle = '#261408';
+    seaCtx.strokeStyle = '#d4af37';
+    seaCtx.lineWidth = 1.5;
+
+    seaCtx.beginPath();
+    seaCtx.moveTo(0, fs.height / 2);
+    seaCtx.lineTo(fs.width / 2, -fs.height * 0.2);
+    seaCtx.lineTo(fs.width * 0.3, -fs.height / 2);
+    seaCtx.lineTo(-fs.width * 0.3, -fs.height / 2);
+    seaCtx.lineTo(-fs.width / 2, -fs.height * 0.2);
+    seaCtx.closePath();
+    seaCtx.fill();
+    seaCtx.stroke();
+
+    // Water Splash Ring around capsizing ship
+    seaCtx.strokeStyle = 'rgba(180, 235, 255, 0.6)';
+    seaCtx.lineWidth = 1.2;
+    seaCtx.beginPath();
+    seaCtx.ellipse(0, fs.height * 0.2, fs.width * 0.8, fs.height * 0.3, 0, 0, Math.PI * 2);
+    seaCtx.stroke();
+
+    seaCtx.restore();
   });
 
   // 4. Draw Cast-Iron Spherical Cannonballs
@@ -1997,16 +2092,9 @@ function initAmbientParticles() {
   const shapeTypes = ['circle', 'oval', 'polygon', 'speck'];
 
   function resizeCanvas() {
-    // Measure full scrollable document height and viewport width
-    width = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
-    height = Math.max(
-      document.body.scrollHeight,
-      document.documentElement.scrollHeight,
-      document.body.offsetHeight,
-      document.documentElement.offsetHeight,
-      document.body.clientHeight,
-      document.documentElement.clientHeight
-    );
+    // Canvas is fixed to the viewport window height so particles float seamlessly across full screen regardless of scrolling
+    width = window.innerWidth || document.documentElement.clientWidth || 0;
+    height = window.innerHeight || document.documentElement.clientHeight || 0;
 
     canvas.width = width;
     canvas.height = height;
