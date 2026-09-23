@@ -435,7 +435,10 @@ function spawnSmallIsland() {
     y: -h - 20,
     width: w,
     height: h,
-    speed: 1.1 + Math.random() * 0.3
+    speed: 1.1 + Math.random() * 0.3,
+    isBroken: false,
+    breakAngle: 0,
+    breakDir: Math.random() < 0.5 ? 1 : -1
   });
 }
 
@@ -590,8 +593,15 @@ function seaGameLoop() {
   }
 
   for (let i = islands.length - 1; i >= 0; i--) {
-    islands[i].y += islands[i].speed;
-    if (islands[i].y > seaCanvas.height + 80) islands.splice(i, 1);
+      const isl = islands[i];
+      isl.y += isl.speed;
+
+      // Animate palm tree falling angle if broken
+      if (isl.isBroken && isl.breakAngle < 1.2) {
+        isl.breakAngle = Math.min(1.2, isl.breakAngle + 0.08);
+      }
+
+      if (isl.y > seaCanvas.height + 80) islands.splice(i, 1);
   }
 
   for (let i = seagulls.length - 1; i >= 0; i--) {
@@ -649,6 +659,40 @@ function seaGameLoop() {
         cannonballs.splice(i, 1);
         cbHit = true;
         break;
+      }
+    }
+
+    if (cbHit) continue;
+
+    // Check collision with Palm Trees on Islands (Snaps palm tree)
+    for (let islIdx = 0; islIdx < islands.length; islIdx++) {
+      const isl = islands[islIdx];
+      if (!isl.isBroken) {
+        const palmBox = {
+          x: isl.x + isl.width / 2 - 14,
+          y: isl.y + isl.height / 2 - 28,
+          width: 28,
+          height: 32
+        };
+        if (checkPointInAABB(cb.x, cb.y, palmBox)) {
+          isl.isBroken = true;
+          // Spawn wood splinters and leaf particles
+          for (let sp = 0; sp < 8; sp++) {
+            rockShatters.push({
+              x: cb.x,
+              y: cb.y,
+              vx: (Math.random() - 0.5) * 3,
+              vy: (Math.random() - 0.5) * 3,
+              radius: 1.2 + Math.random() * 1.8,
+              life: 0.9,
+              decay: 0.04,
+              color: Math.random() < 0.6 ? '#5a3d1e' : '#2e7d32'
+            });
+          }
+          cannonballs.splice(i, 1);
+          cbHit = true;
+          break;
+        }
       }
     }
 
@@ -966,67 +1010,141 @@ function drawSeaBattleFrame() {
     seaCtx.ellipse(cx - 2, cy + 1, isl.width * 0.32, isl.height * 0.28, 0, 0, Math.PI * 2);
     seaCtx.fill();
 
-    // Natural Curved Palm Trunk with Bark Ridges
     const trunkBaseX = cx - 2;
     const trunkBaseY = cy + 4;
-    const topX = cx - 5;
-    const topY = cy - 14;
 
-    seaCtx.strokeStyle = '#5a3d1e';
-    seaCtx.lineWidth = 3.2;
-    seaCtx.lineCap = 'round';
-    seaCtx.beginPath();
-    seaCtx.moveTo(trunkBaseX, trunkBaseY);
-    seaCtx.quadraticCurveTo(cx - 10, cy - 4, topX, topY);
-    seaCtx.stroke();
-
-    // Trunk Bark Ridges
-    seaCtx.strokeStyle = '#3e2812';
-    seaCtx.lineWidth = 1.2;
-    seaCtx.beginPath();
-    seaCtx.moveTo(cx - 4, cy + 1);
-    seaCtx.lineTo(cx - 2, cy + 2);
-    seaCtx.moveTo(cx - 6, cy - 3);
-    seaCtx.lineTo(cx - 4, cy - 2);
-    seaCtx.moveTo(cx - 7, cy - 8);
-    seaCtx.lineTo(cx - 5, cy - 7);
-    seaCtx.stroke();
-
-    // Arching Natural Palm Leaves (Feathery Fan Fronds)
-    const fronds = [
-      { endX: topX - 14, endY: topY - 2, ctrlX: topX - 8, ctrlY: topY - 10 },
-      { endX: topX - 10, endY: topY - 12, ctrlX: topX - 6, ctrlY: topY - 14 },
-      { endX: topX, endY: topY - 15, ctrlX: topX, ctrlY: topY - 16 },
-      { endX: topX + 11, endY: topY - 10, ctrlX: topX + 7, ctrlY: topY - 14 },
-      { endX: topX + 15, endY: topY - 1, ctrlX: topX + 9, ctrlY: topY - 8 },
-      { endX: topX + 10, endY: topY + 6, ctrlX: topX + 7, ctrlY: topY + 2 }
-    ];
-
-    fronds.forEach(f => {
-      // Leaf Stem
-      seaCtx.strokeStyle = '#1b5e20';
-      seaCtx.lineWidth = 1.6;
+    if (isl.isBroken) {
+      // 1. Splintered Stump
+      seaCtx.strokeStyle = '#5a3d1e';
+      seaCtx.lineWidth = 3.2;
+      seaCtx.lineCap = 'butt';
       seaCtx.beginPath();
-      seaCtx.moveTo(topX, topY);
-      seaCtx.quadraticCurveTo(f.ctrlX, f.ctrlY, f.endX, f.endY);
+      seaCtx.moveTo(trunkBaseX, trunkBaseY);
+      seaCtx.lineTo(trunkBaseX - 3, cy - 2);
       seaCtx.stroke();
 
-      // Leaf Blade / Frond Fill
-      seaCtx.fillStyle = '#2e7d32';
+      // Jagged break tip
+      seaCtx.fillStyle = '#7a5229';
       seaCtx.beginPath();
-      seaCtx.moveTo(topX, topY);
-      seaCtx.quadraticCurveTo(f.ctrlX - 1, f.ctrlY - 2, f.endX, f.endY);
-      seaCtx.quadraticCurveTo(f.ctrlX + 1, f.ctrlY + 2, topX, topY);
+      seaCtx.moveTo(trunkBaseX - 5, cy - 2);
+      seaCtx.lineTo(trunkBaseX - 3, cy - 5);
+      seaCtx.lineTo(trunkBaseX - 1, cy - 2);
       seaCtx.fill();
-    });
 
-    // Coconuts at Crown
-    seaCtx.fillStyle = '#3e2723';
-    seaCtx.beginPath();
-    seaCtx.arc(topX - 1, topY + 2, 2.0, 0, Math.PI * 2);
-    seaCtx.arc(topX + 2, topY + 1, 1.8, 0, Math.PI * 2);
-    seaCtx.arc(topX, topY + 3, 1.6, 0, Math.PI * 2);
-    seaCtx.fill();
+      // 2. Upper Fallen Palm Tree (Rotated to side)
+      seaCtx.save();
+      seaCtx.translate(trunkBaseX - 3, cy - 3);
+      seaCtx.rotate(isl.breakDir * (isl.breakAngle || 1.2));
+
+      const topX = 0;
+      const topY = -12;
+
+      // Upper Trunk
+      seaCtx.strokeStyle = '#5a3d1e';
+      seaCtx.lineWidth = 3.0;
+      seaCtx.lineCap = 'round';
+      seaCtx.beginPath();
+      seaCtx.moveTo(0, 0);
+      seaCtx.lineTo(topX, topY);
+      seaCtx.stroke();
+
+      // Fronds
+      const fronds = [
+        { endX: topX - 14, endY: topY - 2, ctrlX: topX - 8, ctrlY: topY - 10 },
+        { endX: topX - 10, endY: topY - 12, ctrlX: topX - 6, ctrlY: topY - 14 },
+        { endX: topX, endY: topY - 15, ctrlX: topX, ctrlY: topY - 16 },
+        { endX: topX + 11, endY: topY - 10, ctrlX: topX + 7, ctrlY: topY - 14 },
+        { endX: topX + 15, endY: topY - 1, ctrlX: topX + 9, ctrlY: topY - 8 },
+        { endX: topX + 10, endY: topY + 6, ctrlX: topX + 7, ctrlY: topY + 2 }
+      ];
+
+      fronds.forEach(f => {
+        seaCtx.strokeStyle = '#1b5e20';
+        seaCtx.lineWidth = 1.6;
+        seaCtx.beginPath();
+        seaCtx.moveTo(topX, topY);
+        seaCtx.quadraticCurveTo(f.ctrlX, f.ctrlY, f.endX, f.endY);
+        seaCtx.stroke();
+
+        seaCtx.fillStyle = '#2e7d32';
+        seaCtx.beginPath();
+        seaCtx.moveTo(topX, topY);
+        seaCtx.quadraticCurveTo(f.ctrlX - 1, f.ctrlY - 2, f.endX, f.endY);
+        seaCtx.quadraticCurveTo(f.ctrlX + 1, f.ctrlY + 2, topX, topY);
+        seaCtx.fill();
+      });
+
+      // Coconuts
+      seaCtx.fillStyle = '#3e2723';
+      seaCtx.beginPath();
+      seaCtx.arc(topX - 1, topY + 2, 2.0, 0, Math.PI * 2);
+      seaCtx.arc(topX + 2, topY + 1, 1.8, 0, Math.PI * 2);
+      seaCtx.arc(topX, topY + 3, 1.6, 0, Math.PI * 2);
+      seaCtx.fill();
+
+      seaCtx.restore();
+
+    } else {
+      // Natural Curved Palm Trunk with Bark Ridges
+      const topX = cx - 5;
+      const topY = cy - 14;
+
+      seaCtx.strokeStyle = '#5a3d1e';
+      seaCtx.lineWidth = 3.2;
+      seaCtx.lineCap = 'round';
+      seaCtx.beginPath();
+      seaCtx.moveTo(trunkBaseX, trunkBaseY);
+      seaCtx.quadraticCurveTo(cx - 10, cy - 4, topX, topY);
+      seaCtx.stroke();
+
+      // Trunk Bark Ridges
+      seaCtx.strokeStyle = '#3e2812';
+      seaCtx.lineWidth = 1.2;
+      seaCtx.beginPath();
+      seaCtx.moveTo(cx - 4, cy + 1);
+      seaCtx.lineTo(cx - 2, cy + 2);
+      seaCtx.moveTo(cx - 6, cy - 3);
+      seaCtx.lineTo(cx - 4, cy - 2);
+      seaCtx.moveTo(cx - 7, cy - 8);
+      seaCtx.lineTo(cx - 5, cy - 7);
+      seaCtx.stroke();
+
+      // Arching Natural Palm Leaves (Feathery Fan Fronds)
+      const fronds = [
+        { endX: topX - 14, endY: topY - 2, ctrlX: topX - 8, ctrlY: topY - 10 },
+        { endX: topX - 10, endY: topY - 12, ctrlX: topX - 6, ctrlY: topY - 14 },
+        { endX: topX, endY: topY - 15, ctrlX: topX, ctrlY: topY - 16 },
+        { endX: topX + 11, endY: topY - 10, ctrlX: topX + 7, ctrlY: topY - 14 },
+        { endX: topX + 15, endY: topY - 1, ctrlX: topX + 9, ctrlY: topY - 8 },
+        { endX: topX + 10, endY: topY + 6, ctrlX: topX + 7, ctrlY: topY + 2 }
+      ];
+
+      fronds.forEach(f => {
+        // Leaf Stem
+        seaCtx.strokeStyle = '#1b5e20';
+        seaCtx.lineWidth = 1.6;
+        seaCtx.beginPath();
+        seaCtx.moveTo(topX, topY);
+        seaCtx.quadraticCurveTo(f.ctrlX, f.ctrlY, f.endX, f.endY);
+        seaCtx.stroke();
+
+        // Leaf Blade / Frond Fill
+        seaCtx.fillStyle = '#2e7d32';
+        seaCtx.beginPath();
+        seaCtx.moveTo(topX, topY);
+        seaCtx.quadraticCurveTo(f.ctrlX - 1, f.ctrlY - 2, f.endX, f.endY);
+        seaCtx.quadraticCurveTo(f.ctrlX + 1, f.ctrlY + 2, topX, topY);
+        seaCtx.fill();
+      });
+
+      // Coconuts at Crown
+      seaCtx.fillStyle = '#3e2723';
+      seaCtx.beginPath();
+      seaCtx.arc(topX - 1, topY + 2, 2.0, 0, Math.PI * 2);
+      seaCtx.arc(topX + 2, topY + 1, 1.8, 0, Math.PI * 2);
+      seaCtx.arc(topX, topY + 3, 1.6, 0, Math.PI * 2);
+      seaCtx.fill();
+    }
   });
 
   // 3. Draw Decorative Floating Barrels
