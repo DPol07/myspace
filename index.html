@@ -81,8 +81,11 @@
   <!-- Main Profile Container -->
   <main class="profile-container">
 
-    <!-- LEFT COLUMN -->
-    <aside class="left-column">
+    <!-- Top Columns Wrapper (Left & Right Columns) -->
+    <div class="profile-columns-wrapper">
+
+      <!-- LEFT COLUMN -->
+      <aside class="left-column">
 
       <!-- Profile Title Header -->
       <div class="profile-title-box">
@@ -291,37 +294,10 @@
         </div>
       </div>
 
-      <!-- SEA BATTLE Mini-Game Panel -->
-      <div class="section-box sea-battle-box" id="sea-battle-panel">
-        <div class="box-header">
-          <h3>SEA BATTLE</h3>
-          <span class="gold-text" style="font-size:11px;">SCORE: <span id="sea-score">0</span> | LIVES: <span id="sea-lives">❤️ ❤️ ❤️</span></span>
-        </div>
-        <div class="box-content sea-battle-content">
-          <div class="sea-battle-wrapper" id="sea-battle-wrapper">
-            <canvas id="sea-battle-canvas" width="340" height="420"></canvas>
+      </aside>
 
-            <!-- Overlay Screen (Start / Game Over) -->
-            <div id="sea-battle-overlay" class="sea-overlay">
-              <div class="sea-overlay-title" id="sea-overlay-title">🏴‍☠️ SEA BATTLE</div>
-              <div class="sea-overlay-subtitle" id="sea-overlay-subtitle">Steer the Black Pearl through rock gaps and blast enemy ships!</div>
-              <div class="sea-overlay-controls">
-                <span><strong>← / →</strong> Steer Left & Right</span><br>
-                <span><strong>Space</strong> Fire Cannons</span>
-              </div>
-              <button class="sea-start-btn" id="sea-start-btn" onclick="startSeaBattle()">COMMENCE BATTLE</button>
-            </div>
-          </div>
-          <div class="sea-controls-hint">
-            Controls: Use <strong>← / →</strong> Arrow Keys to steer through gaps & <strong>SPACEBAR</strong> to fire cannons!
-          </div>
-        </div>
-      </div>
-
-    </aside>
-
-    <!-- RIGHT COLUMN -->
-    <section class="right-column">
+      <!-- RIGHT COLUMN -->
+      <section class="right-column">
 
       <!-- Extended Network Banner -->
       <div class="network-banner">
@@ -577,7 +553,36 @@
         </div>
       </div>
 
-    </section>
+      </section>
+
+    </div><!-- End profile-columns-wrapper -->
+
+    <!-- SEA BATTLE Mini-Game Panel (Full Width Section below Comments) -->
+    <div class="section-box sea-battle-box full-width-sea-battle" id="sea-battle-panel">
+      <div class="box-header">
+        <h3>SEA BATTLE</h3>
+        <span class="gold-text" style="font-size:11px;">SCORE: <span id="sea-score">0</span> | LIVES: <span id="sea-lives">❤️ ❤️ ❤️</span></span>
+      </div>
+      <div class="box-content sea-battle-content">
+        <div class="sea-battle-wrapper" id="sea-battle-wrapper">
+          <canvas id="sea-battle-canvas" width="1040" height="420"></canvas>
+
+          <!-- Overlay Screen (Start / Game Over) -->
+          <div id="sea-battle-overlay" class="sea-overlay">
+            <div class="sea-overlay-title" id="sea-overlay-title">🏴‍☠️ SEA BATTLE</div>
+            <div class="sea-overlay-subtitle" id="sea-overlay-subtitle">Steer the Black Pearl through rock gaps and blast enemy ships!</div>
+            <div class="sea-overlay-controls">
+              <span><strong>← / →</strong> Steer Left & Right</span><br>
+              <span><strong>Space</strong> Fire Cannons</span>
+            </div>
+            <button class="sea-start-btn" id="sea-start-btn" onclick="startSeaBattle()">COMMENCE BATTLE</button>
+          </div>
+        </div>
+        <div class="sea-controls-hint">
+          Controls: Use <strong>← / →</strong> Arrow Keys to steer through gaps & <strong>SPACEBAR</strong> to fire cannons!
+        </div>
+      </div>
+    </div>
 
   </main>
 
