@@ -183,10 +183,26 @@ let spawnTimerBarrels = 0;
 let spawnTimerIslands = 0;
 let spawnTimerSeagulls = 0;
 
+function resizeSeaCanvas() {
+  if (!seaCanvas) return;
+  const parent = seaCanvas.parentElement;
+  if (parent && parent.clientWidth > 0) {
+    seaCanvas.width = parent.clientWidth;
+  }
+}
+
 function initSeaBattle() {
   seaCanvas = document.getElementById('sea-battle-canvas');
   if (!seaCanvas) return;
   seaCtx = seaCanvas.getContext('2d');
+
+  resizeSeaCanvas();
+  window.addEventListener('resize', () => {
+    resizeSeaCanvas();
+    if (!seaGameActive) {
+      drawSeaBattleFrame();
+    }
+  });
 
   // Load high score from localStorage if available
   try {
