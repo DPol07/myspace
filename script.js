@@ -152,129 +152,24 @@ function playSeaSFX(type) {
   try {
     switch (type) {
       case 'cannon': {
-        // Deep cannon blast (Low sub oscillator + burst noise)
+        // Refined, short, subtle, authentic cannon firing sound
+        // Deep low body drop (Sub pitch drop from 110Hz to 25Hz over 0.12s)
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(140, now);
-        osc.frequency.exponentialRampToValueAtTime(30, now + 0.35);
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.exponentialRampToValueAtTime(25, now + 0.12);
 
-        gain.gain.setValueAtTime(0.35, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.38);
-
-        // Noise punch for gunpowder explosion
-        const bufferSize = audioCtx.sampleRate * 0.25;
-        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          output[i] = Math.random() * 2 - 1;
-        }
-        const noise = audioCtx.createBufferSource();
-        noise.buffer = noiseBuffer;
-
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(800, now);
-        filter.frequency.exponentialRampToValueAtTime(150, now + 0.25);
-
-        const noiseGain = audioCtx.createGain();
-        noiseGain.gain.setValueAtTime(0.4, now);
-        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-
-        noise.connect(filter);
-        filter.connect(noiseGain);
-        noiseGain.connect(audioCtx.destination);
-        noise.start(now);
-        break;
-      }
-
-      case 'rockHit': {
-        // Stone impact sound (short crisp noise + medium low thud)
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(220, now);
-        osc.frequency.exponentialRampToValueAtTime(80, now + 0.12);
-
-        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.setValueAtTime(0.18, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
 
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start(now);
         osc.stop(now + 0.12);
-        break;
-      }
 
-      case 'rockCollapse': {
-        // Heavy crumbling stone collapse (Deep tumbling noise)
-        const bufferSize = audioCtx.sampleRate * 0.45;
-        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          output[i] = Math.random() * 2 - 1;
-        }
-        const noise = audioCtx.createBufferSource();
-        noise.buffer = noiseBuffer;
-
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(450, now);
-        filter.frequency.linearRampToValueAtTime(180, now + 0.45);
-
-        const gain = audioCtx.createGain();
-        gain.gain.setValueAtTime(0.35, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(audioCtx.destination);
-        noise.start(now);
-        break;
-      }
-
-      case 'barrelImpact': {
-        // Wooden barrel impact/crack
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(320, now);
-        osc.frequency.exponentialRampToValueAtTime(120, now + 0.15);
-
-        gain.gain.setValueAtTime(0.2, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.15);
-        break;
-      }
-
-      case 'barrelExplosion':
-      case 'enemyDestroyed': {
-        // Refined explosive naval destruction (Sub rumble + fiery burst)
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(180, now);
-        osc.frequency.exponentialRampToValueAtTime(25, now + 0.45);
-
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.45);
-
-        // Explosive noise burst
-        const bufferSize = audioCtx.sampleRate * 0.5;
+        // Gunpowder explosion noise burst (Short, low-pass filtered, non-intrusive)
+        const bufferSize = audioCtx.sampleRate * 0.10; // 100ms short burst
         const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         const output = noiseBuffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
@@ -285,12 +180,12 @@ function playSeaSFX(type) {
 
         const filter = audioCtx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(1100, now);
-        filter.frequency.exponentialRampToValueAtTime(200, now + 0.5);
+        filter.frequency.setValueAtTime(550, now);
+        filter.frequency.exponentialRampToValueAtTime(100, now + 0.10);
 
         const noiseGain = audioCtx.createGain();
-        noiseGain.gain.setValueAtTime(0.4, now);
-        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        noiseGain.gain.setValueAtTime(0.16, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.10);
 
         noise.connect(filter);
         filter.connect(noiseGain);
@@ -299,106 +194,9 @@ function playSeaSFX(type) {
         break;
       }
 
-      case 'enemyHit': {
-        // Cannonball striking enemy wooden hull
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(260, now);
-        osc.frequency.exponentialRampToValueAtTime(90, now + 0.18);
-
-        gain.gain.setValueAtTime(0.28, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.18);
+      default:
+        // All other sound effects deleted / disabled per user request
         break;
-      }
-
-      case 'palmHit':
-      case 'palmBreak': {
-        // Wood/trunk cracking sound
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(400, now);
-        osc.frequency.exponentialRampToValueAtTime(150, now + 0.2);
-
-        gain.gain.setValueAtTime(0.22, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.2);
-        break;
-      }
-
-      case 'seagullCry': {
-        // Natural brief seagull cry (high pitch frequency glide)
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(1100, now);
-        osc.frequency.linearRampToValueAtTime(1450, now + 0.12);
-        osc.frequency.linearRampToValueAtTime(1200, now + 0.22);
-
-        gain.gain.setValueAtTime(0.12, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.22);
-        break;
-      }
-
-      case 'seagullSplash':
-      case 'splash': {
-        // Small water splash sound
-        const bufferSize = audioCtx.sampleRate * 0.18;
-        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          output[i] = Math.random() * 2 - 1;
-        }
-        const noise = audioCtx.createBufferSource();
-        noise.buffer = noiseBuffer;
-
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'highpass';
-        filter.frequency.setValueAtTime(1200, now);
-
-        const gain = audioCtx.createGain();
-        gain.gain.setValueAtTime(0.18, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(audioCtx.destination);
-        noise.start(now);
-        break;
-      }
-
-      case 'playerHit': {
-        // Player damage impact
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(160, now);
-        osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
-
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.3);
-        break;
-      }
     }
   } catch (e) {
     // Graceful fallback if Web Audio is unavailable
