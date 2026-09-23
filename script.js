@@ -135,6 +135,277 @@ function scheduleMelody(startOffsetSec) {
 }
 
 /* ==========================================================================
+   Sea Battle Sound Effects Engine (Web Audio API Synthesizer)
+   ========================================================================== */
+function playSeaSFX(type) {
+  if (!audioCtx) {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtx) audioCtx = new AudioCtx();
+  }
+  if (!audioCtx) return;
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+
+  const now = audioCtx.currentTime;
+
+  try {
+    switch (type) {
+      case 'cannon': {
+        // Deep cannon blast (Low sub oscillator + burst noise)
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.35);
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.38);
+
+        // Noise punch for gunpowder explosion
+        const bufferSize = audioCtx.sampleRate * 0.25;
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = noiseBuffer;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(800, now);
+        filter.frequency.exponentialRampToValueAtTime(150, now + 0.25);
+
+        const noiseGain = audioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.4, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(audioCtx.destination);
+        noise.start(now);
+        break;
+      }
+
+      case 'rockHit': {
+        // Stone impact sound (short crisp noise + medium low thud)
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.12);
+
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+        break;
+      }
+
+      case 'rockCollapse': {
+        // Heavy crumbling stone collapse (Deep tumbling noise)
+        const bufferSize = audioCtx.sampleRate * 0.45;
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = noiseBuffer;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(450, now);
+        filter.frequency.linearRampToValueAtTime(180, now + 0.45);
+
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        noise.start(now);
+        break;
+      }
+
+      case 'barrelImpact': {
+        // Wooden barrel impact/crack
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(120, now + 0.15);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+        break;
+      }
+
+      case 'barrelExplosion':
+      case 'enemyDestroyed': {
+        // Refined explosive naval destruction (Sub rumble + fiery burst)
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(25, now + 0.45);
+
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.45);
+
+        // Explosive noise burst
+        const bufferSize = audioCtx.sampleRate * 0.5;
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = noiseBuffer;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1100, now);
+        filter.frequency.exponentialRampToValueAtTime(200, now + 0.5);
+
+        const noiseGain = audioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.4, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(audioCtx.destination);
+        noise.start(now);
+        break;
+      }
+
+      case 'enemyHit': {
+        // Cannonball striking enemy wooden hull
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.exponentialRampToValueAtTime(90, now + 0.18);
+
+        gain.gain.setValueAtTime(0.28, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.18);
+        break;
+      }
+
+      case 'palmHit':
+      case 'palmBreak': {
+        // Wood/trunk cracking sound
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.2);
+
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.2);
+        break;
+      }
+
+      case 'seagullCry': {
+        // Natural brief seagull cry (high pitch frequency glide)
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1100, now);
+        osc.frequency.linearRampToValueAtTime(1450, now + 0.12);
+        osc.frequency.linearRampToValueAtTime(1200, now + 0.22);
+
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.22);
+        break;
+      }
+
+      case 'seagullSplash':
+      case 'splash': {
+        // Small water splash sound
+        const bufferSize = audioCtx.sampleRate * 0.18;
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = noiseBuffer;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(1200, now);
+
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        noise.start(now);
+        break;
+      }
+
+      case 'playerHit': {
+        // Player damage impact
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.3);
+        break;
+      }
+    }
+  } catch (e) {
+    // Graceful fallback if Web Audio is unavailable
+  }
+}
+
+/* ==========================================================================
    Sea Battle Mini-Game Logic
    ========================================================================== */
 let seaCanvas = null;
@@ -174,6 +445,7 @@ let fallingSeagulls = [];
 let splashEffects = [];
 let explosions = [];
 let rockShatters = [];
+let scorePopups = [];
 
 // Animated Wave / Sea Mesh State
 let oceanTime = 0;
@@ -258,6 +530,7 @@ function startSeaBattle() {
   splashEffects = [];
   explosions = [];
   rockShatters = [];
+  scorePopups = [];
 
   spawnTimerRocks = 0;
   spawnTimerEnemies = 0;
@@ -299,6 +572,8 @@ function fireCannonball() {
   const now = Date.now();
   if (now - lastCannonTime < cannonCooldown) return;
   lastCannonTime = now;
+
+  playSeaSFX('cannon');
 
   // Fire cannonball from center bow of Black Pearl
   cannonballs.push({
@@ -663,6 +938,7 @@ function seaGameLoop() {
     // Check if reached water level or canvas bottom
     if (fg.y >= fg.waterTargetY || fg.y >= seaCanvas.height - 20) {
       createWaterSplashEffect(fg.x, fg.y);
+      playSeaSFX('seagullSplash');
       fallingSeagulls.splice(i, 1);
     }
   }
@@ -691,17 +967,19 @@ function seaGameLoop() {
 
     let cbHit = false;
 
-    // Check collision with Rocks (3 Hits to Destroy, 0 Points)
+    // Check collision with Rocks (2 Hits to Destroy, 0 Points)
     for (let rIdx = rocks.length - 1; rIdx >= 0; rIdx--) {
       const r = rocks[rIdx];
       if (checkPointInAABB(cb.x, cb.y, r)) {
         r.hits = (r.hits || 0) + 1;
 
-        if (r.hits < 3) {
-          // 1st & 2nd Hit: Sparks and rock chips
+        if (r.hits === 1) {
+          // 1st Hit: Cracks appear + stone chip particles + rock hit sound
           createRockShatterEffect(cb.x, cb.y);
+          playSeaSFX('rockHit');
         } else {
-          // 3rd Hit: Rock disintegrates, collapses and sinks into the sea
+          // 2nd Hit: Rock breaks apart, collapses and sinks into the sea + heavy collapse sound
+          playSeaSFX('rockCollapse');
           createWaterSplashEffect(r.x + r.width / 2, r.y + r.height / 2);
 
           // Flying rock chunks debris
@@ -760,6 +1038,7 @@ function seaGameLoop() {
         };
         if (checkPointInAABB(cb.x, cb.y, palmBox)) {
           isl.isBroken = true;
+          playSeaSFX('palmBreak');
           // Spawn wood splinters and leaf particles
           for (let sp = 0; sp < 10; sp++) {
             rockShatters.push({
@@ -787,6 +1066,7 @@ function seaGameLoop() {
       const b = barrels[bIdx];
       if (checkPointInAABB(cb.x, cb.y, b)) {
         createExplosion(b.x + b.width / 2, b.y + b.height / 2);
+        playSeaSFX('barrelExplosion');
         cannonballs.splice(i, 1);
         barrels.splice(bIdx, 1);
         cbHit = true;
@@ -801,6 +1081,7 @@ function seaGameLoop() {
       const g = seagulls[gIdx];
       const gBox = { x: g.x - g.size, y: g.y - g.size, width: g.size * 2, height: g.size * 2 };
       if (checkPointInAABB(cb.x, cb.y, gBox)) {
+        playSeaSFX('seagullCry');
         // Convert seagull to falling seagull
         fallingSeagulls.push({
           x: g.x,
@@ -841,7 +1122,22 @@ function seaGameLoop() {
     for (let eIdx = enemyShips.length - 1; eIdx >= 0; eIdx--) {
       const e = enemyShips[eIdx];
       if (checkPointInAABB(cb.x, cb.y, e)) {
-        createExplosion(e.x + e.width / 2, e.y + e.height / 2);
+        const destroyX = e.x + e.width / 2;
+        const destroyY = e.y + e.height / 2;
+
+        createExplosion(destroyX, destroyY);
+        playSeaSFX('enemyDestroyed');
+
+        // Spawn floating "+1" score popup feedback
+        scorePopups.push({
+          x: destroyX,
+          y: destroyY - 8,
+          vy: -1.2,
+          life: 1.0,
+          decay: 0.025,
+          text: '+1'
+        });
+
         cannonballs.splice(i, 1);
         enemyShips.splice(eIdx, 1);
         seaScore += 1;
@@ -866,6 +1162,7 @@ function seaGameLoop() {
       seaLives--;
       updateSeaHUD();
       playerShip.invulnerableTimer = 60; // ~1s invulnerability flash
+      playSeaSFX('playerHit');
       createExplosion(playerShip.x + playerShip.width / 2, playerShip.y + playerShip.height / 2);
 
       if (seaLives <= 0) {
@@ -968,6 +1265,14 @@ function seaGameLoop() {
     p.y += p.vy;
     p.life -= p.decay;
     if (p.life <= 0) rockShatters.splice(i, 1);
+  }
+
+  // Floating Score Popup Text Updates
+  for (let i = scorePopups.length - 1; i >= 0; i--) {
+    const pop = scorePopups[i];
+    pop.y += pop.vy;
+    pop.life -= pop.decay;
+    if (pop.life <= 0) scorePopups.splice(i, 1);
   }
 
   // 7. Render Complete Frame
@@ -1326,11 +1631,10 @@ function drawSeaBattleFrame() {
     seaCtx.arc(r.x + r.width * 0.4, r.y + r.height * 0.4, Math.max(2.5, r.width * 0.2), 0, Math.PI * 2);
     seaCtx.fill();
 
-    // Crack overlays based on damage level
-    if (r.hits === 1) {
-      // Hit 1: Fine dark fracture lines radiating across the boulder face
+    // Crack overlays on Hit 1 (Fine dark fracture lines + stone edge highlight)
+    if (r.hits >= 1) {
       seaCtx.strokeStyle = '#0d0906';
-      seaCtx.lineWidth = 1.5;
+      seaCtx.lineWidth = 1.8;
       seaCtx.beginPath();
       // Main crack line
       seaCtx.moveTo(r.x + r.width * 0.3, r.y + r.height * 0.2);
@@ -1342,35 +1646,11 @@ function drawSeaBattleFrame() {
       seaCtx.stroke();
 
       // Highlight line alongside crack
-      seaCtx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      seaCtx.lineWidth = 0.8;
+      seaCtx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      seaCtx.lineWidth = 1.0;
       seaCtx.beginPath();
       seaCtx.moveTo(r.x + r.width * 0.32, r.y + r.height * 0.2);
       seaCtx.lineTo(r.x + r.width * 0.52, r.y + r.height * 0.5);
-      seaCtx.stroke();
-
-    } else if (r.hits === 2) {
-      // Hit 2: Deep, wide jagged fissures with chipped rock edges
-      seaCtx.strokeStyle = '#050302';
-      seaCtx.lineWidth = 2.8;
-      seaCtx.beginPath();
-      // Primary deep fissure
-      seaCtx.moveTo(r.x + r.width * 0.25, r.y + r.height * 0.15);
-      seaCtx.lineTo(r.x + r.width * 0.48, r.y + r.height * 0.45);
-      seaCtx.lineTo(r.x + r.width * 0.4, r.y + r.height * 0.85);
-      // Secondary cross fissure
-      seaCtx.moveTo(r.x + r.width * 0.15, r.y + r.height * 0.55);
-      seaCtx.lineTo(r.x + r.width * 0.48, r.y + r.height * 0.45);
-      seaCtx.lineTo(r.x + r.width * 0.85, r.y + r.height * 0.35);
-      seaCtx.stroke();
-
-      // Bright chipped stone edge highlights showing deep structural damage
-      seaCtx.strokeStyle = 'rgba(215, 200, 180, 0.5)';
-      seaCtx.lineWidth = 1.2;
-      seaCtx.beginPath();
-      seaCtx.moveTo(r.x + r.width * 0.27, r.y + r.height * 0.15);
-      seaCtx.lineTo(r.x + r.width * 0.5, r.y + r.height * 0.45);
-      seaCtx.lineTo(r.x + r.width * 0.87, r.y + r.height * 0.35);
       seaCtx.stroke();
     }
 
@@ -1495,6 +1775,19 @@ function drawSeaBattleFrame() {
       seaCtx.fill();
     }
     seaCtx.globalAlpha = 1.0;
+  });
+
+  // 11. Draw Floating Score Popup Text (+1)
+  scorePopups.forEach(pop => {
+    seaCtx.save();
+    seaCtx.globalAlpha = Math.max(0, pop.life);
+    seaCtx.fillStyle = '#f59e0b';
+    seaCtx.shadowColor = '#000000';
+    seaCtx.shadowBlur = 4;
+    seaCtx.font = 'bold 16px "Trebuchet MS", Arial, sans-serif';
+    seaCtx.textAlign = 'center';
+    seaCtx.fillText(pop.text, pop.x, pop.y);
+    seaCtx.restore();
   });
 
   // 7. Draw Rock Shatter Particles
