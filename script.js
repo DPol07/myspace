@@ -148,9 +148,9 @@ let seaHighScore = 0;
 let playerShip = {
   x: 150,
   y: 350,
-  width: 32,
-  height: 48,
-  speed: 4.8,
+  width: 44,
+  height: 64,
+  speed: 9.6,
   invulnerableTimer: 0
 };
 
@@ -240,7 +240,7 @@ function startSeaBattle() {
   seaLives = 3;
 
   playerShip.x = seaCanvas.width / 2 - playerShip.width / 2;
-  playerShip.y = seaCanvas.height - 65;
+  playerShip.y = seaCanvas.height - 82;
   playerShip.invulnerableTimer = 0;
 
   cannonballs = [];
@@ -299,8 +299,8 @@ function fireCannonball() {
   cannonballs.push({
     x: playerShip.x + playerShip.width / 2,
     y: playerShip.y,
-    radius: 4,
-    speed: 7.5
+    radius: 5.5,
+    speed: 10.5
   });
 }
 
@@ -311,18 +311,18 @@ function fireCannonball() {
  */
 function spawnScatteredRock() {
   const baseSpeed = 2.0 + Math.min(1.8, seaScore * 0.07);
-  const rockW = 18 + Math.random() * 18; // 18px - 36px wide
-  const rockH = 16 + Math.random() * 16; // 16px - 32px tall
+  const rockW = 26 + Math.random() * 24; // 26px - 50px wide
+  const rockH = 24 + Math.random() * 22; // 24px - 46px tall
 
   // Pick a random X position on canvas
-  let x = 15 + Math.random() * (seaCanvas.width - rockW - 30);
+  let x = 20 + Math.random() * (seaCanvas.width - rockW - 40);
 
   // Avoid placing directly over an existing top rock
-  const topRocks = rocks.filter(r => r.y < 40);
+  const topRocks = rocks.filter(r => r.y < 50);
   for (let r of topRocks) {
-    if (Math.abs((x + rockW / 2) - (r.x + r.width / 2)) < 55) {
-      x = (r.x + r.width + 60) % (seaCanvas.width - rockW - 30);
-      if (x < 15) x = 15;
+    if (Math.abs((x + rockW / 2) - (r.x + r.width / 2)) < 75) {
+      x = (r.x + r.width + 80) % (seaCanvas.width - rockW - 40);
+      if (x < 20) x = 20;
     }
   }
 
@@ -336,14 +336,14 @@ function spawnScatteredRock() {
 
   // 25% chance to spawn a small adjacent companion rock (small cluster)
   if (Math.random() < 0.25) {
-    const companionW = 14 + Math.random() * 12;
-    const companionH = 14 + Math.random() * 12;
-    const offsetX = Math.random() < 0.5 ? (rockW - 4) : (-companionW + 4);
+    const companionW = 20 + Math.random() * 16;
+    const companionH = 20 + Math.random() * 16;
+    const offsetX = Math.random() < 0.5 ? (rockW - 6) : (-companionW + 6);
     const companionX = Math.max(10, Math.min(seaCanvas.width - companionW - 10, x + offsetX));
 
     rocks.push({
       x: companionX,
-      y: -rockH + (Math.random() * 6 - 3),
+      y: -rockH + (Math.random() * 8 - 4),
       width: companionW,
       height: companionH,
       speed: baseSpeed
@@ -387,8 +387,8 @@ function createWaterSplashEffect(x, y) {
  * by any rocks currently on screen between the top and player ship level.
  */
 function spawnEnemyShip() {
-  const enemyWidth = 28;
-  const enemyHeight = 42;
+  const enemyWidth = 38;
+  const enemyHeight = 56;
 
   // Find all rocks currently on screen above player ship line
   const blockingRocks = rocks.filter(r => r.y >= -20 && r.y < playerShip.y - 30);
@@ -431,8 +431,8 @@ function spawnEnemyShip() {
  * Environmental Details Generators (Decorative Only)
  */
 function spawnFloatingBarrel() {
-  const w = 12 + Math.random() * 4;
-  const h = 16 + Math.random() * 4;
+  const w = 18 + Math.random() * 6;
+  const h = 24 + Math.random() * 6;
   barrels.push({
     x: 15 + Math.random() * (seaCanvas.width - w - 30),
     y: -h,
@@ -444,10 +444,10 @@ function spawnFloatingBarrel() {
 }
 
 function spawnSmallIsland() {
-  const w = 55 + Math.random() * 20;
-  const h = 40 + Math.random() * 15;
+  const w = 80 + Math.random() * 28;
+  const h = 56 + Math.random() * 20;
   islands.push({
-    x: 10 + Math.random() * (seaCanvas.width - w - 20),
+    x: 20 + Math.random() * (seaCanvas.width - w - 40),
     y: -h - 20,
     width: w,
     height: h,
@@ -461,11 +461,11 @@ function spawnSmallIsland() {
 function spawnSeagull() {
   const fromLeft = Math.random() < 0.5;
   seagulls.push({
-    x: fromLeft ? -20 : seaCanvas.width + 20,
+    x: fromLeft ? -30 : seaCanvas.width + 30,
     y: 30 + Math.random() * (seaCanvas.height * 0.6),
-    vx: fromLeft ? (1.2 + Math.random() * 1.0) : (-1.2 - Math.random() * 1.0),
+    vx: fromLeft ? (1.4 + Math.random() * 1.2) : (-1.4 - Math.random() * 1.2),
     vy: (Math.random() - 0.5) * 0.4,
-    size: 10 + Math.random() * 5
+    size: 15 + Math.random() * 7
   });
 }
 
@@ -685,21 +685,21 @@ function seaGameLoop() {
       const isl = islands[islIdx];
       if (!isl.isBroken) {
         const palmBox = {
-          x: isl.x + isl.width / 2 - 14,
-          y: isl.y + isl.height / 2 - 28,
-          width: 28,
-          height: 32
+          x: isl.x + isl.width / 2 - 18,
+          y: isl.y + isl.height / 2 - 38,
+          width: 36,
+          height: 44
         };
         if (checkPointInAABB(cb.x, cb.y, palmBox)) {
           isl.isBroken = true;
           // Spawn wood splinters and leaf particles
-          for (let sp = 0; sp < 8; sp++) {
+          for (let sp = 0; sp < 10; sp++) {
             rockShatters.push({
               x: cb.x,
               y: cb.y,
-              vx: (Math.random() - 0.5) * 3,
-              vy: (Math.random() - 0.5) * 3,
-              radius: 1.2 + Math.random() * 1.8,
+              vx: (Math.random() - 0.5) * 3.5,
+              vy: (Math.random() - 0.5) * 3.5,
+              radius: 1.5 + Math.random() * 2.2,
               life: 0.9,
               decay: 0.04,
               color: Math.random() < 0.6 ? '#5a3d1e' : '#2e7d32'
@@ -1032,32 +1032,32 @@ function drawSeaBattleFrame() {
     if (isl.isBroken) {
       // 1. Splintered Stump
       seaCtx.strokeStyle = '#5a3d1e';
-      seaCtx.lineWidth = 3.2;
+      seaCtx.lineWidth = 4.5;
       seaCtx.lineCap = 'butt';
       seaCtx.beginPath();
       seaCtx.moveTo(trunkBaseX, trunkBaseY);
-      seaCtx.lineTo(trunkBaseX - 3, cy - 2);
+      seaCtx.lineTo(trunkBaseX - 4, cy - 3);
       seaCtx.stroke();
 
       // Jagged break tip
       seaCtx.fillStyle = '#7a5229';
       seaCtx.beginPath();
-      seaCtx.moveTo(trunkBaseX - 5, cy - 2);
-      seaCtx.lineTo(trunkBaseX - 3, cy - 5);
-      seaCtx.lineTo(trunkBaseX - 1, cy - 2);
+      seaCtx.moveTo(trunkBaseX - 7, cy - 3);
+      seaCtx.lineTo(trunkBaseX - 4, cy - 7);
+      seaCtx.lineTo(trunkBaseX - 1, cy - 3);
       seaCtx.fill();
 
       // 2. Upper Fallen Palm Tree (Rotated to side)
       seaCtx.save();
-      seaCtx.translate(trunkBaseX - 3, cy - 3);
+      seaCtx.translate(trunkBaseX - 4, cy - 4);
       seaCtx.rotate(isl.breakDir * (isl.breakAngle || 1.2));
 
       const topX = 0;
-      const topY = -12;
+      const topY = -18;
 
       // Upper Trunk
       seaCtx.strokeStyle = '#5a3d1e';
-      seaCtx.lineWidth = 3.0;
+      seaCtx.lineWidth = 4.0;
       seaCtx.lineCap = 'round';
       seaCtx.beginPath();
       seaCtx.moveTo(0, 0);
@@ -1066,17 +1066,17 @@ function drawSeaBattleFrame() {
 
       // Fronds
       const fronds = [
-        { endX: topX - 14, endY: topY - 2, ctrlX: topX - 8, ctrlY: topY - 10 },
-        { endX: topX - 10, endY: topY - 12, ctrlX: topX - 6, ctrlY: topY - 14 },
-        { endX: topX, endY: topY - 15, ctrlX: topX, ctrlY: topY - 16 },
-        { endX: topX + 11, endY: topY - 10, ctrlX: topX + 7, ctrlY: topY - 14 },
-        { endX: topX + 15, endY: topY - 1, ctrlX: topX + 9, ctrlY: topY - 8 },
-        { endX: topX + 10, endY: topY + 6, ctrlX: topX + 7, ctrlY: topY + 2 }
+        { endX: topX - 20, endY: topY - 3, ctrlX: topX - 12, ctrlY: topY - 14 },
+        { endX: topX - 14, endY: topY - 17, ctrlX: topX - 9, ctrlY: topY - 20 },
+        { endX: topX, endY: topY - 21, ctrlX: topX, ctrlY: topY - 23 },
+        { endX: topX + 16, endY: topY - 14, ctrlX: topX + 10, ctrlY: topY - 20 },
+        { endX: topX + 21, endY: topY - 1, ctrlX: topX + 13, ctrlY: topY - 11 },
+        { endX: topX + 14, endY: topY + 8, ctrlX: topX + 10, ctrlY: topY + 3 }
       ];
 
       fronds.forEach(f => {
         seaCtx.strokeStyle = '#1b5e20';
-        seaCtx.lineWidth = 1.6;
+        seaCtx.lineWidth = 2.2;
         seaCtx.beginPath();
         seaCtx.moveTo(topX, topY);
         seaCtx.quadraticCurveTo(f.ctrlX, f.ctrlY, f.endX, f.endY);
@@ -1085,60 +1085,60 @@ function drawSeaBattleFrame() {
         seaCtx.fillStyle = '#2e7d32';
         seaCtx.beginPath();
         seaCtx.moveTo(topX, topY);
-        seaCtx.quadraticCurveTo(f.ctrlX - 1, f.ctrlY - 2, f.endX, f.endY);
-        seaCtx.quadraticCurveTo(f.ctrlX + 1, f.ctrlY + 2, topX, topY);
+        seaCtx.quadraticCurveTo(f.ctrlX - 1.5, f.ctrlY - 3, f.endX, f.endY);
+        seaCtx.quadraticCurveTo(f.ctrlX + 1.5, f.ctrlY + 3, topX, topY);
         seaCtx.fill();
       });
 
       // Coconuts
       seaCtx.fillStyle = '#3e2723';
       seaCtx.beginPath();
-      seaCtx.arc(topX - 1, topY + 2, 2.0, 0, Math.PI * 2);
-      seaCtx.arc(topX + 2, topY + 1, 1.8, 0, Math.PI * 2);
-      seaCtx.arc(topX, topY + 3, 1.6, 0, Math.PI * 2);
+      seaCtx.arc(topX - 2, topY + 3, 2.8, 0, Math.PI * 2);
+      seaCtx.arc(topX + 3, topY + 2, 2.5, 0, Math.PI * 2);
+      seaCtx.arc(topX, topY + 4, 2.2, 0, Math.PI * 2);
       seaCtx.fill();
 
       seaCtx.restore();
 
     } else {
       // Natural Curved Palm Trunk with Bark Ridges
-      const topX = cx - 5;
-      const topY = cy - 14;
+      const topX = cx - 7;
+      const topY = cy - 20;
 
       seaCtx.strokeStyle = '#5a3d1e';
-      seaCtx.lineWidth = 3.2;
+      seaCtx.lineWidth = 4.5;
       seaCtx.lineCap = 'round';
       seaCtx.beginPath();
       seaCtx.moveTo(trunkBaseX, trunkBaseY);
-      seaCtx.quadraticCurveTo(cx - 10, cy - 4, topX, topY);
+      seaCtx.quadraticCurveTo(cx - 14, cy - 6, topX, topY);
       seaCtx.stroke();
 
       // Trunk Bark Ridges
       seaCtx.strokeStyle = '#3e2812';
-      seaCtx.lineWidth = 1.2;
+      seaCtx.lineWidth = 1.6;
       seaCtx.beginPath();
-      seaCtx.moveTo(cx - 4, cy + 1);
-      seaCtx.lineTo(cx - 2, cy + 2);
-      seaCtx.moveTo(cx - 6, cy - 3);
-      seaCtx.lineTo(cx - 4, cy - 2);
-      seaCtx.moveTo(cx - 7, cy - 8);
-      seaCtx.lineTo(cx - 5, cy - 7);
+      seaCtx.moveTo(cx - 6, cy + 1);
+      seaCtx.lineTo(cx - 3, cy + 3);
+      seaCtx.moveTo(cx - 9, cy - 4);
+      seaCtx.lineTo(cx - 6, cy - 2);
+      seaCtx.moveTo(cx - 10, cy - 11);
+      seaCtx.lineTo(cx - 7, cy - 9);
       seaCtx.stroke();
 
       // Arching Natural Palm Leaves (Feathery Fan Fronds)
       const fronds = [
-        { endX: topX - 14, endY: topY - 2, ctrlX: topX - 8, ctrlY: topY - 10 },
-        { endX: topX - 10, endY: topY - 12, ctrlX: topX - 6, ctrlY: topY - 14 },
-        { endX: topX, endY: topY - 15, ctrlX: topX, ctrlY: topY - 16 },
-        { endX: topX + 11, endY: topY - 10, ctrlX: topX + 7, ctrlY: topY - 14 },
-        { endX: topX + 15, endY: topY - 1, ctrlX: topX + 9, ctrlY: topY - 8 },
-        { endX: topX + 10, endY: topY + 6, ctrlX: topX + 7, ctrlY: topY + 2 }
+        { endX: topX - 20, endY: topY - 3, ctrlX: topX - 12, ctrlY: topY - 14 },
+        { endX: topX - 14, endY: topY - 17, ctrlX: topX - 9, ctrlY: topY - 20 },
+        { endX: topX, endY: topY - 21, ctrlX: topX, ctrlY: topY - 23 },
+        { endX: topX + 16, endY: topY - 14, ctrlX: topX + 10, ctrlY: topY - 20 },
+        { endX: topX + 21, endY: topY - 1, ctrlX: topX + 13, ctrlY: topY - 11 },
+        { endX: topX + 14, endY: topY + 8, ctrlX: topX + 10, ctrlY: topY + 3 }
       ];
 
       fronds.forEach(f => {
         // Leaf Stem
         seaCtx.strokeStyle = '#1b5e20';
-        seaCtx.lineWidth = 1.6;
+        seaCtx.lineWidth = 2.2;
         seaCtx.beginPath();
         seaCtx.moveTo(topX, topY);
         seaCtx.quadraticCurveTo(f.ctrlX, f.ctrlY, f.endX, f.endY);
@@ -1148,17 +1148,17 @@ function drawSeaBattleFrame() {
         seaCtx.fillStyle = '#2e7d32';
         seaCtx.beginPath();
         seaCtx.moveTo(topX, topY);
-        seaCtx.quadraticCurveTo(f.ctrlX - 1, f.ctrlY - 2, f.endX, f.endY);
-        seaCtx.quadraticCurveTo(f.ctrlX + 1, f.ctrlY + 2, topX, topY);
+        seaCtx.quadraticCurveTo(f.ctrlX - 1.5, f.ctrlY - 3, f.endX, f.endY);
+        seaCtx.quadraticCurveTo(f.ctrlX + 1.5, f.ctrlY + 3, topX, topY);
         seaCtx.fill();
       });
 
       // Coconuts at Crown
       seaCtx.fillStyle = '#3e2723';
       seaCtx.beginPath();
-      seaCtx.arc(topX - 1, topY + 2, 2.0, 0, Math.PI * 2);
-      seaCtx.arc(topX + 2, topY + 1, 1.8, 0, Math.PI * 2);
-      seaCtx.arc(topX, topY + 3, 1.6, 0, Math.PI * 2);
+      seaCtx.arc(topX - 2, topY + 3, 2.8, 0, Math.PI * 2);
+      seaCtx.arc(topX + 3, topY + 2, 2.5, 0, Math.PI * 2);
+      seaCtx.arc(topX, topY + 4, 2.2, 0, Math.PI * 2);
       seaCtx.fill();
     }
   });
@@ -1287,13 +1287,13 @@ function drawSeaBattleFrame() {
 
     // Skull/Crossbones emblem
     seaCtx.fillStyle = '#d4af37';
-    seaCtx.font = '10px sans-serif';
+    seaCtx.font = '13px sans-serif';
     seaCtx.textAlign = 'center';
     seaCtx.fillText('☠️', p.x + p.width / 2, p.y + p.height * 0.5);
 
     // Bowsprit
     seaCtx.fillStyle = '#d4af37';
-    seaCtx.fillRect(p.x + p.width / 2 - 1, p.y - 6, 2, 8);
+    seaCtx.fillRect(p.x + p.width / 2 - 1, p.y - 8, 2, 10);
   }
 
   // 6. Draw Explosions & Impact Effects
