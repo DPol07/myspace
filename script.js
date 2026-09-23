@@ -588,6 +588,20 @@ function seaGameLoop() {
 
     if (cbHit) continue;
 
+    // Check collision with Wooden Barrels (Barrels EXPLODE when shot)
+    for (let bIdx = barrels.length - 1; bIdx >= 0; bIdx--) {
+      const b = barrels[bIdx];
+      if (checkPointInAABB(cb.x, cb.y, b)) {
+        createExplosion(b.x + b.width / 2, b.y + b.height / 2);
+        cannonballs.splice(i, 1);
+        barrels.splice(bIdx, 1);
+        cbHit = true;
+        break;
+      }
+    }
+
+    if (cbHit) continue;
+
     // Check collision with Enemy Ships (+1 Point)
     for (let eIdx = enemyShips.length - 1; eIdx >= 0; eIdx--) {
       const e = enemyShips[eIdx];
