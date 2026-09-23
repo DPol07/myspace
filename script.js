@@ -151,6 +151,10 @@ let playerShip = {
   width: 44,
   height: 64,
   speed: 9.6,
+  vx: 0,
+  maxSpeed: 9.8,
+  accel: 1.4,
+  friction: 0.75,
   invulnerableTimer: 0
 };
 
@@ -241,6 +245,7 @@ function startSeaBattle() {
 
   playerShip.x = seaCanvas.width / 2 - playerShip.width / 2;
   playerShip.y = seaCanvas.height - 82;
+  playerShip.vx = 0;
   playerShip.invulnerableTimer = 0;
 
   cannonballs = [];
@@ -548,16 +553,33 @@ function seaGameLoop() {
 
   oceanTime += 0.05;
 
-  // 1. Update Player Movement & Firing
+  // 1. Update Player Movement & Firing (Smooth Velocity-based Steering)
   if (keyState.left) {
-    playerShip.x -= playerShip.speed;
-    if (playerShip.x < 5) playerShip.x = 5;
+    playerShip.vx -= playerShip.accel;
   }
   if (keyState.right) {
-    playerShip.x += playerShip.speed;
-    if (playerShip.x > seaCanvas.width - playerShip.width - 5) {
-      playerShip.x = seaCanvas.width - playerShip.width - 5;
-    }
+    playerShip.vx += playerShip.accel;
+  }
+  if (!keyState.left && !keyState.right) {
+    playerShip.vx *= playerShip.friction;
+  } else {
+    playerShip.vx *= 0.88; // subtle velocity dampening under active input
+  }
+
+  // Clamp velocity to max responsive speed
+  if (playerShip.vx > playerShip.maxSpeed) playerShip.vx = playerShip.maxSpeed;
+  if (playerShip.vx < -playerShip.maxSpeed) playerShip.vx = -playerShip.maxSpeed;
+
+  if (Math.abs(playerShip.vx) < 0.05) playerShip.vx = 0;
+
+  playerShip.x += playerShip.vx;
+  if (playerShip.x < 5) {
+    playerShip.x = 5;
+    playerShip.vx = 0;
+  }
+  if (playerShip.x > seaCanvas.width - playerShip.width - 5) {
+    playerShip.x = seaCanvas.width - playerShip.width - 5;
+    playerShip.vx = 0;
   }
   if (keyState.space) {
     fireCannonball();
@@ -685,10 +707,10 @@ function seaGameLoop() {
       const isl = islands[islIdx];
       if (!isl.isBroken) {
         const palmBox = {
-          x: isl.x + isl.width / 2 - 18,
-          y: isl.y + isl.height / 2 - 38,
-          width: 36,
-          height: 44
+          x: isl.x + isl.width / 2 - 20,
+          y: isl.y + isl.height / 2 - 42,
+          width: 40,
+          height: 48
         };
         if (checkPointInAABB(cb.x, cb.y, palmBox)) {
           isl.isBroken = true;
@@ -1006,160 +1028,203 @@ function drawSeaBattleFrame() {
   // 1. Animated Ocean Sea Background
   drawOceanBackground(w, h);
 
-  // 2. Draw Small Tropical Islands with Refined Palm Tree
+  // 2. Draw Small Tropical Islands with Polished Animated Palm Trees
   islands.forEach(isl => {
     const cx = isl.x + isl.width / 2;
     const cy = isl.y + isl.height / 2;
 
-    // Sandy Shore
+    // Sandy Shore with Shoreline Wave Foam
     seaCtx.fillStyle = '#d9b46e';
-    seaCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    seaCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
     seaCtx.lineWidth = 1.5;
     seaCtx.beginPath();
     seaCtx.ellipse(cx, cy, isl.width / 2, isl.height / 2, 0, 0, Math.PI * 2);
     seaCtx.fill();
     seaCtx.stroke();
 
-    // Inner Lush Grass Base
-    seaCtx.fillStyle = '#2d6a33';
+    // Inner Lush Tropical Island Hill/Grass Base
+    const islandGrassGrad = seaCtx.createRadialGradient(cx - 2, cy - 2, 2, cx, cy, isl.width * 0.35);
+    islandGrassGrad.addColorStop(0, '#43a047');
+    islandGrassGrad.addColorStop(0.7, '#2e7d32');
+    islandGrassGrad.addColorStop(1, '#1b5e20');
+    seaCtx.fillStyle = islandGrassGrad;
     seaCtx.beginPath();
-    seaCtx.ellipse(cx - 2, cy + 1, isl.width * 0.32, isl.height * 0.28, 0, 0, Math.PI * 2);
+    seaCtx.ellipse(cx - 2, cy + 1, isl.width * 0.33, isl.height * 0.29, 0, 0, Math.PI * 2);
     seaCtx.fill();
+
+    // Natural Wind Sway Motion
+    const windSway = Math.sin(oceanTime * 2.2 + isl.x * 0.1) * 2.5;
 
     const trunkBaseX = cx - 2;
     const trunkBaseY = cy + 4;
 
-    if (isl.isBroken) {
-      // 1. Splintered Stump
-      seaCtx.strokeStyle = '#5a3d1e';
-      seaCtx.lineWidth = 4.5;
-      seaCtx.lineCap = 'butt';
-      seaCtx.beginPath();
-      seaCtx.moveTo(trunkBaseX, trunkBaseY);
-      seaCtx.lineTo(trunkBaseX - 4, cy - 3);
-      seaCtx.stroke();
+    // Helper function to draw lush, multi-layered palm fronds
+    function drawPolishedPalmCrown(topX, topY, isFallen = false) {
+      // Frond Definitions with Curvature & Wind Influence
+      const frondData = [
+        { angle: -2.3, length: 24, curve: -0.35, width: 6.5, color: '#1b5e20', tipColor: '#4caf50' },
+        { angle: -1.7, length: 27, curve: -0.2,  width: 7.0, color: '#2e7d32', tipColor: '#66bb6a' },
+        { angle: -1.1, length: 28, curve: 0.1,   width: 7.2, color: '#388e3c', tipColor: '#81c784' },
+        { angle: -0.4, length: 26, curve: 0.3,   width: 6.8, color: '#2e7d32', tipColor: '#66bb6a' },
+        { angle: 0.2,  length: 23, curve: 0.4,   width: 6.0, color: '#1b5e20', tipColor: '#4caf50' },
+        { angle: 2.6,  length: 22, curve: -0.4,  width: 5.8, color: '#1b5e20', tipColor: '#388e3c' },
+        { angle: 3.0,  length: 24, curve: -0.25, width: 6.2, color: '#2e7d32', tipColor: '#4caf50' }
+      ];
 
-      // Jagged break tip
-      seaCtx.fillStyle = '#7a5229';
+      frondData.forEach(fd => {
+        seaCtx.save();
+        seaCtx.translate(topX, topY);
+
+        const currentAngle = fd.angle + (isFallen ? 0 : (windSway * 0.025));
+        seaCtx.rotate(currentAngle);
+
+        const tipX = fd.length;
+        const tipY = fd.curve * fd.length;
+        const ctrlX = fd.length * 0.5;
+        const ctrlY = fd.curve * fd.length * 0.8 - (fd.width * 0.5);
+
+        // Under-shadow leaf blade
+        seaCtx.fillStyle = 'rgba(10, 35, 12, 0.4)';
+        seaCtx.beginPath();
+        seaCtx.moveTo(0, 0);
+        seaCtx.quadraticCurveTo(ctrlX, ctrlY + 2, tipX, tipY);
+        seaCtx.quadraticCurveTo(ctrlX, ctrlY + fd.width + 1, 0, 0);
+        seaCtx.fill();
+
+        // Main Leaf Body Gradient
+        const frondGrad = seaCtx.createLinearGradient(0, 0, tipX, tipY);
+        frondGrad.addColorStop(0, fd.color);
+        frondGrad.addColorStop(0.7, fd.color);
+        frondGrad.addColorStop(1, fd.tipColor);
+
+        seaCtx.fillStyle = frondGrad;
+        seaCtx.beginPath();
+        seaCtx.moveTo(0, 0);
+        seaCtx.quadraticCurveTo(ctrlX, ctrlY, tipX, tipY);
+        seaCtx.quadraticCurveTo(ctrlX, ctrlY + fd.width, 0, 0);
+        seaCtx.fill();
+
+        // Central Spine Highlight Line
+        seaCtx.strokeStyle = '#a5d6a7';
+        seaCtx.lineWidth = 1.0;
+        seaCtx.beginPath();
+        seaCtx.moveTo(0, 0);
+        seaCtx.quadraticCurveTo(ctrlX, ctrlY + fd.width * 0.4, tipX, tipY);
+        seaCtx.stroke();
+
+        seaCtx.restore();
+      });
+
+      // Cluster of 3D Coconuts at Crown Core
+      const coconuts = [
+        { dx: -3, dy: 2, r: 3.2 },
+        { dx: 3,  dy: 3, r: 2.8 },
+        { dx: 0,  dy: 5, r: 2.6 }
+      ];
+
+      coconuts.forEach(c => {
+        const cocoGrad = seaCtx.createRadialGradient(
+          topX + c.dx - 1, topY + c.dy - 1, 0.5,
+          topX + c.dx, topY + c.dy, c.r
+        );
+        cocoGrad.addColorStop(0, '#8d6e63');
+        cocoGrad.addColorStop(0.5, '#4e342e');
+        cocoGrad.addColorStop(1, '#261208');
+
+        seaCtx.fillStyle = cocoGrad;
+        seaCtx.beginPath();
+        seaCtx.arc(topX + c.dx, topY + c.dy, c.r, 0, Math.PI * 2);
+        seaCtx.fill();
+      });
+    }
+
+    if (isl.isBroken) {
+      // 1. Splintered Stump Base
+      const stumpGrad = seaCtx.createLinearGradient(trunkBaseX - 6, trunkBaseY, trunkBaseX + 2, cy - 4);
+      stumpGrad.addColorStop(0, '#3e2723');
+      stumpGrad.addColorStop(0.5, '#5d4037');
+      stumpGrad.addColorStop(1, '#8d6e63');
+
+      seaCtx.fillStyle = stumpGrad;
       seaCtx.beginPath();
-      seaCtx.moveTo(trunkBaseX - 7, cy - 3);
-      seaCtx.lineTo(trunkBaseX - 4, cy - 7);
-      seaCtx.lineTo(trunkBaseX - 1, cy - 3);
+      seaCtx.moveTo(trunkBaseX - 4, trunkBaseY);
+      seaCtx.lineTo(trunkBaseX + 3, trunkBaseY);
+      seaCtx.lineTo(trunkBaseX + 1, cy - 3);
+      seaCtx.lineTo(trunkBaseX - 5, cy - 3);
+      seaCtx.closePath();
       seaCtx.fill();
 
-      // 2. Upper Fallen Palm Tree (Rotated to side)
+      // Jagged Wooden Splinters Tip
+      seaCtx.fillStyle = '#d7ccc8';
+      seaCtx.beginPath();
+      seaCtx.moveTo(trunkBaseX - 5, cy - 3);
+      seaCtx.lineTo(trunkBaseX - 3, cy - 8);
+      seaCtx.lineTo(trunkBaseX - 1, cy - 3);
+      seaCtx.lineTo(trunkBaseX + 1, cy - 7);
+      seaCtx.lineTo(trunkBaseX + 2, cy - 3);
+      seaCtx.fill();
+
+      // 2. Fallen Palm Tree (Rotated on island)
       seaCtx.save();
-      seaCtx.translate(trunkBaseX - 4, cy - 4);
+      seaCtx.translate(trunkBaseX - 3, cy - 4);
       seaCtx.rotate(isl.breakDir * (isl.breakAngle || 1.2));
 
       const topX = 0;
-      const topY = -18;
+      const topY = -22;
 
-      // Upper Trunk
-      seaCtx.strokeStyle = '#5a3d1e';
-      seaCtx.lineWidth = 4.0;
+      // Fallen Curved Trunk
+      seaCtx.strokeStyle = '#4e342e';
+      seaCtx.lineWidth = 5.0;
       seaCtx.lineCap = 'round';
       seaCtx.beginPath();
       seaCtx.moveTo(0, 0);
       seaCtx.lineTo(topX, topY);
       seaCtx.stroke();
 
-      // Fronds
-      const fronds = [
-        { endX: topX - 20, endY: topY - 3, ctrlX: topX - 12, ctrlY: topY - 14 },
-        { endX: topX - 14, endY: topY - 17, ctrlX: topX - 9, ctrlY: topY - 20 },
-        { endX: topX, endY: topY - 21, ctrlX: topX, ctrlY: topY - 23 },
-        { endX: topX + 16, endY: topY - 14, ctrlX: topX + 10, ctrlY: topY - 20 },
-        { endX: topX + 21, endY: topY - 1, ctrlX: topX + 13, ctrlY: topY - 11 },
-        { endX: topX + 14, endY: topY + 8, ctrlX: topX + 10, ctrlY: topY + 3 }
-      ];
-
-      fronds.forEach(f => {
-        seaCtx.strokeStyle = '#1b5e20';
-        seaCtx.lineWidth = 2.2;
-        seaCtx.beginPath();
-        seaCtx.moveTo(topX, topY);
-        seaCtx.quadraticCurveTo(f.ctrlX, f.ctrlY, f.endX, f.endY);
-        seaCtx.stroke();
-
-        seaCtx.fillStyle = '#2e7d32';
-        seaCtx.beginPath();
-        seaCtx.moveTo(topX, topY);
-        seaCtx.quadraticCurveTo(f.ctrlX - 1.5, f.ctrlY - 3, f.endX, f.endY);
-        seaCtx.quadraticCurveTo(f.ctrlX + 1.5, f.ctrlY + 3, topX, topY);
-        seaCtx.fill();
-      });
-
-      // Coconuts
-      seaCtx.fillStyle = '#3e2723';
-      seaCtx.beginPath();
-      seaCtx.arc(topX - 2, topY + 3, 2.8, 0, Math.PI * 2);
-      seaCtx.arc(topX + 3, topY + 2, 2.5, 0, Math.PI * 2);
-      seaCtx.arc(topX, topY + 4, 2.2, 0, Math.PI * 2);
-      seaCtx.fill();
+      drawPolishedPalmCrown(topX, topY, true);
 
       seaCtx.restore();
 
     } else {
-      // Natural Curved Palm Trunk with Bark Ridges
-      const topX = cx - 7;
-      const topY = cy - 20;
+      // Natural Curved Trunk with Tapering & Bark Ring Overlays
+      const topX = cx - 9 + windSway * 0.6;
+      const topY = cy - 26;
+      const ctrlX = cx - 16;
+      const ctrlY = cy - 10;
 
-      seaCtx.strokeStyle = '#5a3d1e';
-      seaCtx.lineWidth = 4.5;
+      // Outer Smooth Trunk Shadow/Outline
+      seaCtx.strokeStyle = '#261208';
+      seaCtx.lineWidth = 6.2;
       seaCtx.lineCap = 'round';
       seaCtx.beginPath();
       seaCtx.moveTo(trunkBaseX, trunkBaseY);
-      seaCtx.quadraticCurveTo(cx - 14, cy - 6, topX, topY);
+      seaCtx.quadraticCurveTo(ctrlX, ctrlY, topX, topY);
       seaCtx.stroke();
 
-      // Trunk Bark Ridges
-      seaCtx.strokeStyle = '#3e2812';
-      seaCtx.lineWidth = 1.6;
+      // Core Warm Wooden Trunk Gradient Line
+      seaCtx.strokeStyle = '#6d4c41';
+      seaCtx.lineWidth = 4.6;
       seaCtx.beginPath();
-      seaCtx.moveTo(cx - 6, cy + 1);
-      seaCtx.lineTo(cx - 3, cy + 3);
-      seaCtx.moveTo(cx - 9, cy - 4);
-      seaCtx.lineTo(cx - 6, cy - 2);
-      seaCtx.moveTo(cx - 10, cy - 11);
-      seaCtx.lineTo(cx - 7, cy - 9);
+      seaCtx.moveTo(trunkBaseX, trunkBaseY);
+      seaCtx.quadraticCurveTo(ctrlX, ctrlY, topX, topY);
       seaCtx.stroke();
 
-      // Arching Natural Palm Leaves (Feathery Fan Fronds)
-      const fronds = [
-        { endX: topX - 20, endY: topY - 3, ctrlX: topX - 12, ctrlY: topY - 14 },
-        { endX: topX - 14, endY: topY - 17, ctrlX: topX - 9, ctrlY: topY - 20 },
-        { endX: topX, endY: topY - 21, ctrlX: topX, ctrlY: topY - 23 },
-        { endX: topX + 16, endY: topY - 14, ctrlX: topX + 10, ctrlY: topY - 20 },
-        { endX: topX + 21, endY: topY - 1, ctrlX: topX + 13, ctrlY: topY - 11 },
-        { endX: topX + 14, endY: topY + 8, ctrlX: topX + 10, ctrlY: topY + 3 }
-      ];
-
-      fronds.forEach(f => {
-        // Leaf Stem
-        seaCtx.strokeStyle = '#1b5e20';
-        seaCtx.lineWidth = 2.2;
+      // Textured Bark Segment Rings
+      seaCtx.strokeStyle = '#3e2723';
+      seaCtx.lineWidth = 1.8;
+      const ringSteps = 5;
+      for (let r = 1; r < ringSteps; r++) {
+        const t = r / ringSteps;
+        const rx = (1 - t) * (1 - t) * trunkBaseX + 2 * (1 - t) * t * ctrlX + t * t * topX;
+        const ry = (1 - t) * (1 - t) * trunkBaseY + 2 * (1 - t) * t * ctrlY + t * t * topY;
         seaCtx.beginPath();
-        seaCtx.moveTo(topX, topY);
-        seaCtx.quadraticCurveTo(f.ctrlX, f.ctrlY, f.endX, f.endY);
+        seaCtx.moveTo(rx - 2.5, ry - 1);
+        seaCtx.lineTo(rx + 2.5, ry + 1);
         seaCtx.stroke();
+      }
 
-        // Leaf Blade / Frond Fill
-        seaCtx.fillStyle = '#2e7d32';
-        seaCtx.beginPath();
-        seaCtx.moveTo(topX, topY);
-        seaCtx.quadraticCurveTo(f.ctrlX - 1.5, f.ctrlY - 3, f.endX, f.endY);
-        seaCtx.quadraticCurveTo(f.ctrlX + 1.5, f.ctrlY + 3, topX, topY);
-        seaCtx.fill();
-      });
-
-      // Coconuts at Crown
-      seaCtx.fillStyle = '#3e2723';
-      seaCtx.beginPath();
-      seaCtx.arc(topX - 2, topY + 3, 2.8, 0, Math.PI * 2);
-      seaCtx.arc(topX + 3, topY + 2, 2.5, 0, Math.PI * 2);
-      seaCtx.arc(topX, topY + 4, 2.2, 0, Math.PI * 2);
-      seaCtx.fill();
+      // Draw Polished Lush Animated Frond Crown
+      drawPolishedPalmCrown(topX, topY, false);
     }
   });
 
@@ -1247,15 +1312,38 @@ function drawSeaBattleFrame() {
     seaCtx.fillRect(e.x + e.width / 2 - 1, e.y + 2, 2, e.height * 0.7);
   });
 
-  // 4. Draw Cannonballs
+  // 4. Draw Cast-Iron Spherical Cannonballs
   cannonballs.forEach(cb => {
-    seaCtx.fillStyle = '#ffd700';
-    seaCtx.shadowColor = '#ffaa00';
-    seaCtx.shadowBlur = 8;
+    // 3D Metallic Cast-Iron Radial Gradient
+    const grad = seaCtx.createRadialGradient(
+      cb.x - cb.radius * 0.35, cb.y - cb.radius * 0.35, cb.radius * 0.1,
+      cb.x, cb.y, cb.radius
+    );
+    grad.addColorStop(0, '#a0a7ad');    // Specular highlight spot
+    grad.addColorStop(0.35, '#4a5157'); // Metallic iron body
+    grad.addColorStop(0.8, '#1e2225');  // Dark cast iron
+    grad.addColorStop(1, '#0c0e10');    // Edge shadow
+
+    // Faint atmospheric trail shadow
+    seaCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    seaCtx.beginPath();
+    seaCtx.ellipse(cb.x, cb.y + cb.radius * 0.5, cb.radius * 0.8, cb.radius * 0.4, 0, 0, Math.PI * 2);
+    seaCtx.fill();
+
+    // Main Spherical Iron Cannonball
+    seaCtx.fillStyle = grad;
+    seaCtx.strokeStyle = '#080a0b';
+    seaCtx.lineWidth = 1;
     seaCtx.beginPath();
     seaCtx.arc(cb.x, cb.y, cb.radius, 0, Math.PI * 2);
     seaCtx.fill();
-    seaCtx.shadowBlur = 0;
+    seaCtx.stroke();
+
+    // Bright Specular Reflection Glint
+    seaCtx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    seaCtx.beginPath();
+    seaCtx.arc(cb.x - cb.radius * 0.35, cb.y - cb.radius * 0.35, cb.radius * 0.2, 0, Math.PI * 2);
+    seaCtx.fill();
   });
 
   // 5. Draw Black Pearl Player Ship
