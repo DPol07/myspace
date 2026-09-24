@@ -499,36 +499,48 @@ function createWaterSplashEffect(x, y) {
 }
 
 /**
- * Reachable Enemy Ship Generator:
- * Spawns enemy ships at positions across the sea that are NOT blocked in line-of-sight
- * by any rocks currently on screen between the top and player ship level.
+ * Reachable Royal Navy Ship Generator:
+ * Spawns enemy warships at positions across the sea that are NOT blocked by islands
+ * or completely obscured in line-of-sight by rocks.
  */
 function spawnEnemyShip() {
   const enemyWidth = 38;
   const enemyHeight = 56;
 
-  // Find all rocks currently on screen above player ship line
+  // Find all rocks and islands currently on screen
   const blockingRocks = rocks.filter(r => r.y >= -20 && r.y < playerShip.y - 30);
+  const activeIslands = islands.filter(isl => isl.y >= -100 && isl.y < seaCanvas.height);
 
-  // Helper to test if an enemy at candidate X is completely blocked by a rock in vertical cannon line
-  function isBlockedByRock(candidateX) {
+  // Helper to test if an enemy at candidate X is completely blocked by a rock or overlaps an island
+  function isInvalidSpawn(candidateX) {
     const eLeft = candidateX;
     const eRight = candidateX + enemyWidth;
+
+    // 1. Check island overlap/intersection
+    for (let isl of activeIslands) {
+      const islLeft = isl.x - 10;
+      const islRight = isl.x + isl.width + 10;
+      if (eLeft < islRight && eRight > islLeft) {
+        return true; // Overlaps or sails through island
+      }
+    }
+
+    // 2. Check complete rock coverage in line of fire
     for (let r of blockingRocks) {
       const rLeft = r.x;
       const rRight = r.x + r.width;
-      // If rock completely covers the enemy ship width along line of fire
       if (rLeft <= eLeft + 4 && rRight >= eRight - 4) {
         return true;
       }
     }
+
     return false;
   }
 
   let x = 20 + Math.random() * (seaCanvas.width - enemyWidth - 40);
   let attempts = 0;
 
-  while (isBlockedByRock(x) && attempts < 15) {
+  while (isInvalidSpawn(x) && attempts < 20) {
     x = 20 + Math.random() * (seaCanvas.width - enemyWidth - 40);
     attempts++;
   }
