@@ -76,7 +76,7 @@ function scheduleMelody(startOffsetSec) {
   const now = audioCtx.currentTime;
   let timeCursor = 0;
 
-  // Loop melody twice
+  // Polyphonic Orchestral Arrangement: Lead Brass, Horn Harmony, Cello/Bass Ostinato & Timpani Percussion
   const fullMelody = [...pirateMelody, ...pirateMelody];
 
   fullMelody.forEach((note) => {
@@ -84,52 +84,96 @@ function scheduleMelody(startOffsetSec) {
     const noteEnd = timeCursor + note.dur;
     timeCursor = noteEnd;
 
-    // Only schedule if the note starts after or straddles the startOffset
     if (noteEnd > startOffsetSec) {
       const scheduledStartTime = now + Math.max(0, noteStart - startOffsetSec);
       const duration = (noteStart < startOffsetSec) ? (noteEnd - startOffsetSec) : note.dur;
 
-      // Lead synth oscillator
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
+      // 1. Lead Orchestral Brass / Strings (Sawtooth + Warm Low-Pass Filter)
+      const leadOsc = audioCtx.createOscillator();
+      const leadGain = audioCtx.createGain();
+      const leadFilter = audioCtx.createBiquadFilter();
 
-      osc.type = 'sawtooth';
-      osc.frequency.value = note.freq;
+      leadOsc.type = 'sawtooth';
+      leadOsc.frequency.value = note.freq;
 
-      // Warm low-pass filter
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 1200;
+      leadFilter.type = 'lowpass';
+      leadFilter.frequency.setValueAtTime(1600, scheduledStartTime);
+      leadFilter.frequency.exponentialRampToValueAtTime(800, scheduledStartTime + duration);
 
-      const volume = 0.08;
-      gain.gain.setValueAtTime(volume, scheduledStartTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, scheduledStartTime + duration - 0.02);
+      leadGain.gain.setValueAtTime(0.09, scheduledStartTime);
+      leadGain.gain.exponentialRampToValueAtTime(0.001, scheduledStartTime + duration - 0.015);
 
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(audioCtx.destination);
+      leadOsc.connect(leadFilter);
+      leadFilter.connect(leadGain);
+      leadGain.connect(audioCtx.destination);
 
-      osc.start(scheduledStartTime);
-      osc.stop(scheduledStartTime + duration);
+      leadOsc.start(scheduledStartTime);
+      leadOsc.stop(scheduledStartTime + duration);
+      activeOscillators.push(leadOsc);
 
-      activeOscillators.push(osc);
+      // 2. French Horn Harmony (Harmonic Major 3rd / Minor 3rd Transposition)
+      const hornOsc = audioCtx.createOscillator();
+      const hornGain = audioCtx.createGain();
+      const hornFilter = audioCtx.createBiquadFilter();
 
-      // Bass drone oscillator for depth
+      hornOsc.type = 'triangle';
+      hornOsc.frequency.value = note.freq * 1.25; // Transposed 3rd harmony
+
+      hornFilter.type = 'lowpass';
+      hornFilter.frequency.value = 1100;
+
+      hornGain.gain.setValueAtTime(0.045, scheduledStartTime);
+      hornGain.gain.exponentialRampToValueAtTime(0.001, scheduledStartTime + duration - 0.015);
+
+      hornOsc.connect(hornFilter);
+      hornFilter.connect(hornGain);
+      hornGain.connect(audioCtx.destination);
+
+      hornOsc.start(scheduledStartTime);
+      hornOsc.stop(scheduledStartTime + duration);
+      activeOscillators.push(hornOsc);
+
+      // 3. Deep Cello / Double Bass Low End (Sub 1 Octave Down)
       const bassOsc = audioCtx.createOscillator();
       const bassGain = audioCtx.createGain();
-      bassOsc.type = 'triangle';
+      const bassFilter = audioCtx.createBiquadFilter();
+
+      bassOsc.type = 'sawtooth';
       bassOsc.frequency.value = note.freq / 2;
 
-      bassGain.gain.setValueAtTime(0.04, scheduledStartTime);
-      bassGain.gain.exponentialRampToValueAtTime(0.001, scheduledStartTime + duration - 0.02);
+      bassFilter.type = 'lowpass';
+      bassFilter.frequency.value = 450;
 
-      bassOsc.connect(bassGain);
+      bassGain.gain.setValueAtTime(0.07, scheduledStartTime);
+      bassGain.gain.exponentialRampToValueAtTime(0.001, scheduledStartTime + duration - 0.015);
+
+      bassOsc.connect(bassFilter);
+      bassFilter.connect(bassGain);
       bassGain.connect(audioCtx.destination);
 
       bassOsc.start(scheduledStartTime);
       bassOsc.stop(scheduledStartTime + duration);
-
       activeOscillators.push(bassOsc);
+
+      // 4. Orchestral Timpani / Snare Accent on beat starts
+      if (note.dur >= 0.4) {
+        const timpaniOsc = audioCtx.createOscillator();
+        const timpaniGain = audioCtx.createGain();
+
+        timpaniOsc.type = 'sine';
+        timpaniOsc.frequency.setValueAtTime(95, scheduledStartTime);
+        timpaniOsc.frequency.exponentialRampToValueAtTime(35, scheduledStartTime + 0.18);
+
+        timpaniGain.gain.setValueAtTime(0.12, scheduledStartTime);
+        timpaniGain.gain.exponentialRampToValueAtTime(0.001, scheduledStartTime + 0.18);
+
+        timpaniOsc.connect(timpaniGain);
+        timpaniGain.connect(audioCtx.destination);
+
+        timpaniOsc.start(scheduledStartTime);
+        timpaniOsc.stop(scheduledStartTime + 0.18);
+        activeOscillators.push(timpaniOsc);
+      }
     }
   });
 }
