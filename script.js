@@ -1093,7 +1093,36 @@ function seaGameLoop() {
     if (e.y >= seaCanvas.height) {
       seaLives--;
       updateSeaHUD();
-      createExplosion(e.x + e.width / 2, seaCanvas.height - 10);
+
+      // 1. Subtle border pulse feedback on playfield wrapper
+      const wrapper = document.getElementById('sea-battle-wrapper');
+      if (wrapper) {
+        wrapper.classList.remove('border-pulse');
+        void wrapper.offsetWidth; // Force reflow
+        wrapper.classList.add('border-pulse');
+        setTimeout(() => wrapper.classList.remove('border-pulse'), 400);
+      }
+
+      // 2. Lost heart flicker feedback in HUD
+      const livesSpan = document.getElementById('sea-lives');
+      if (livesSpan) {
+        livesSpan.classList.remove('heart-flicker');
+        void livesSpan.offsetWidth; // Force reflow
+        livesSpan.classList.add('heart-flicker');
+        setTimeout(() => livesSpan.classList.remove('heart-flicker'), 400);
+      }
+
+      // 3. Small "SHIP MISSED" indicator near bottom of game area fading out smoothly
+      scorePopups.push({
+        x: Math.max(70, Math.min(seaCanvas.width - 70, e.x + e.width / 2)),
+        y: seaCanvas.height - 30,
+        vy: -0.8,
+        life: 1.0,
+        decay: 0.025,
+        text: 'SHIP MISSED',
+        color: '#f87171'
+      });
+
       enemyShips.splice(i, 1);
 
       if (seaLives <= 0) {
@@ -1790,14 +1819,14 @@ function drawSeaBattleFrame() {
     seaCtx.globalAlpha = 1.0;
   });
 
-  // 11. Draw Floating Score Popup Text (+1)
+  // 11. Draw Floating Score Popup Text (+1 or SHIP MISSED)
   scorePopups.forEach(pop => {
     seaCtx.save();
     seaCtx.globalAlpha = Math.max(0, pop.life);
-    seaCtx.fillStyle = '#f59e0b';
+    seaCtx.fillStyle = pop.color || '#f59e0b';
     seaCtx.shadowColor = '#000000';
     seaCtx.shadowBlur = 4;
-    seaCtx.font = 'bold 16px "Trebuchet MS", Arial, sans-serif';
+    seaCtx.font = 'bold 15px "Trebuchet MS", Arial, sans-serif';
     seaCtx.textAlign = 'center';
     seaCtx.fillText(pop.text, pop.x, pop.y);
     seaCtx.restore();
