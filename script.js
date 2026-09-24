@@ -650,6 +650,11 @@ function spawnEnemyShip() {
     hp = 1;
   }
 
+  // Speed variations based on variant (declared before reaches-bottom solver check)
+  let baseSpeed = 1.1 + Math.min(2.0, seaScore * 0.08);
+  if (variant === 'armored') baseSpeed *= 0.72; // Slower heavy warship
+  if (variant === 'artillery') baseSpeed *= 1.25; // Faster light mortar galley
+
   // Find all rocks and islands currently on screen
   const blockingRocks = rocks.filter(r => r.y >= -20 && r.y < playerShip.y - 30);
   const activeIslands = islands.filter(isl => isl.y >= -100 && isl.y < seaCanvas.height);
@@ -698,11 +703,6 @@ function spawnEnemyShip() {
     x = 20 + Math.random() * (seaCanvas.width - enemyWidth - 40);
     attempts++;
   }
-
-  // Speed variations based on variant
-  let baseSpeed = 1.1 + Math.min(2.0, seaScore * 0.08);
-  if (variant === 'armored') baseSpeed *= 0.72; // Slower heavy warship
-  if (variant === 'artillery') baseSpeed *= 1.25; // Faster light mortar galley
 
   enemyShips.push({
     x: x,
