@@ -269,7 +269,11 @@ let playerShip = {
   maxSpeed: 9.8,
   accel: 1.4,
   friction: 0.75,
-  invulnerableTimer: 0
+  invulnerableTimer: 0,
+  dashCharges: 3,
+  maxDashCharges: 3,
+  dashCooldownTimer: 0,
+  dashBurstTimer: 0
 };
 
 let keyState = {
@@ -277,12 +281,14 @@ let keyState = {
   right: false,
   up: false,
   down: false,
+  shift: false,
   space: false
 };
 
 let cannonballs = [];
 let enemyShips = [];
 let flippingShips = [];
+let enemyProjectiles = [];
 let rocks = [];
 let barrels = [];
 let islands = [];
@@ -292,6 +298,7 @@ let splashEffects = [];
 let explosions = [];
 let rockShatters = [];
 let scorePopups = [];
+let dashWakes = [];
 
 // Animated Wave / Sea Mesh State
 let oceanTime = 0;
@@ -332,7 +339,7 @@ function initSeaBattle() {
     if (saved) seaHighScore = parseInt(saved, 10) || 0;
   } catch (e) {}
 
-  // Keyboard Event Listeners (Arrow Keys & WASD Support)
+  // Keyboard Event Listeners (Arrow Keys, WASD, Shift & Spacebar Support)
   window.addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
     if (e.key === 'ArrowLeft' || k === 'a') {
@@ -347,6 +354,12 @@ function initSeaBattle() {
     } else if (e.key === 'ArrowDown' || k === 's') {
       keyState.down = true;
       if (seaGameActive) e.preventDefault();
+    } else if (e.key === 'Shift') {
+      keyState.shift = true;
+      if (seaGameActive) {
+        e.preventDefault();
+        triggerPlayerDash();
+      }
     } else if (e.key === ' ' || e.key === 'Spacebar') {
       keyState.space = true;
       if (seaGameActive) e.preventDefault();
@@ -359,6 +372,7 @@ function initSeaBattle() {
     else if (e.key === 'ArrowRight' || k === 'd') keyState.right = false;
     else if (e.key === 'ArrowUp' || k === 'w') keyState.up = false;
     else if (e.key === 'ArrowDown' || k === 's') keyState.down = false;
+    else if (e.key === 'Shift') keyState.shift = false;
     else if (e.key === ' ' || e.key === 'Spacebar') keyState.space = false;
   });
 
@@ -376,10 +390,14 @@ function startSeaBattle() {
   playerShip.vx = 0;
   playerShip.vy = 0;
   playerShip.invulnerableTimer = 0;
+  playerShip.dashCharges = 3;
+  playerShip.dashCooldownTimer = 0;
+  playerShip.dashBurstTimer = 0;
 
   cannonballs = [];
   enemyShips = [];
   flippingShips = [];
+  enemyProjectiles = [];
   rocks = [];
   barrels = [];
   islands = [];
@@ -389,6 +407,7 @@ function startSeaBattle() {
   explosions = [];
   rockShatters = [];
   scorePopups = [];
+  dashWakes = [];
 
   spawnTimerRocks = 0;
   spawnTimerEnemies = 0;
@@ -415,6 +434,7 @@ function startSeaBattle() {
 function updateSeaHUD() {
   const scoreSpan = document.getElementById('sea-score');
   const livesSpan = document.getElementById('sea-lives');
+  const dashSpan = document.getElementById('sea-dash');
 
   if (scoreSpan) scoreSpan.innerText = seaScore;
   if (livesSpan) {
@@ -424,6 +444,63 @@ function updateSeaHUD() {
     }
     livesSpan.innerText = hearts.trim();
   }
+  if (dashSpan) {
+    let dashes = '';
+    for (let i = 0; i < playerShip.maxDashCharges; i++) {
+      dashes += (i < playerShip.dashCharges) ? '💨 ' : '⚪ ';
+    }
+    dashSpan.innerText = dashes.trim();
+  }
+}
+
+function triggerPlayerDash() {
+  if (!seaGameActive) return;
+  if (playerShip.dashCharges <= 0 || playerShip.dashCooldownTimer > 0) return;
+
+  playerShip.dashCharges--;
+  playerShip.dashCooldownTimer = 18; // Short internal cooldown before next dash
+  playerShip.dashBurstTimer = 10;     // Active burst duration
+
+  // Directional unit vectors
+  let dirX = 0;
+  let dirY = 0;
+
+  if (keyState.left) dirX -= 1;
+  if (keyState.right) dirX += 1;
+  if (keyState.up) dirY -= 1;
+  if (keyState.down) dirY += 1;
+
+  // Default to forward/upward dash burst if stationary
+  if (dirX === 0 && dirY === 0) {
+    dirY = -1;
+  }
+
+  // Normalize directional vector
+  const len = Math.sqrt(dirX * dirX + dirY * dirY) || 1;
+  dirX /= len;
+  dirY /= len;
+
+  const dashForce = 22.0;
+  playerShip.vx = dirX * dashForce;
+  playerShip.vy = dirY * dashForce;
+
+  // Spawn initial water wake burst trail behind the Black Pearl
+  const px = playerShip.x + playerShip.width / 2;
+  const py = playerShip.y + playerShip.height / 2;
+
+  for (let i = 0; i < 14; i++) {
+    dashWakes.push({
+      x: px + (Math.random() - 0.5) * 24,
+      y: py + (Math.random() - 0.5) * 24,
+      vx: -dirX * (1.5 + Math.random() * 2.5) + (Math.random() - 0.5) * 1.5,
+      vy: -dirY * (1.5 + Math.random() * 2.5) + (Math.random() - 0.5) * 1.5,
+      radius: 3 + Math.random() * 5,
+      life: 1.0,
+      decay: 0.04 + Math.random() * 0.03
+    });
+  }
+
+  updateSeaHUD();
 }
 
 function fireCannonball() {
@@ -546,26 +623,46 @@ function createWaterSplashEffect(x, y) {
 
 /**
  * Reachable Royal Navy Ship Generator:
- * Spawns enemy warships at positions across the sea that are NOT blocked by islands
- * or completely obscured in line-of-sight by rocks.
+ * Spawns enemy warships (normal, armored, or artillery) at positions across the sea
+ * that are NOT blocked by islands or completely obscured in line-of-sight by rocks.
  */
 function spawnEnemyShip() {
-  const enemyWidth = 38;
-  const enemyHeight = 56;
+  // Determine ship variant: normal (standard), armored (3 hits, slower, larger), artillery (fires mortar shots, faster, smaller)
+  let variant = 'normal';
+  const rand = Math.random();
+  if (seaScore >= 3 && rand < 0.28) {
+    variant = 'armored';
+  } else if (seaScore >= 2 && rand < 0.52) {
+    variant = 'artillery';
+  }
+
+  let enemyWidth = 38;
+  let enemyHeight = 56;
+  let hp = 1;
+
+  if (variant === 'armored') {
+    enemyWidth = 46;
+    enemyHeight = 66;
+    hp = 3;
+  } else if (variant === 'artillery') {
+    enemyWidth = 32;
+    enemyHeight = 48;
+    hp = 1;
+  }
 
   // Find all rocks and islands currently on screen
   const blockingRocks = rocks.filter(r => r.y >= -20 && r.y < playerShip.y - 30);
   const activeIslands = islands.filter(isl => isl.y >= -100 && isl.y < seaCanvas.height);
 
-  // Helper to test if an enemy at candidate X is completely blocked by a rock or overlaps an island
+  // Helper to test if an enemy at candidate X is impossible to reach/attack or overlaps an island
   function isInvalidSpawn(candidateX) {
     const eLeft = candidateX;
     const eRight = candidateX + enemyWidth;
 
     // 1. Check island overlap/intersection
     for (let isl of activeIslands) {
-      const islLeft = isl.x - 10;
-      const islRight = isl.x + isl.width + 10;
+      const islLeft = isl.x - 12;
+      const islRight = isl.x + isl.width + 12;
       if (eLeft < islRight && eRight > islLeft) {
         return true; // Overlaps or sails through island
       }
@@ -580,26 +677,43 @@ function spawnEnemyShip() {
       }
     }
 
+    // 3. Ensure candidate enemy X leaves a navigable, solvable path from current player position
+    // Calculate player travel time to reach enemy column vs enemy travel time to reach bottom
+    const distToEnemyX = Math.abs((playerShip.x + playerShip.width / 2) - (candidateX + enemyWidth / 2));
+    const timeToEnemyX = distToEnemyX / playerShip.maxSpeed;
+    const timeToReachBottom = (seaCanvas.height + enemyHeight) / baseSpeed;
+
+    // If player cannot physically reach or align with enemy ship before it reaches bottom canvas
+    if (timeToEnemyX > timeToReachBottom * 0.75) {
+      return true;
+    }
+
     return false;
   }
 
   let x = 20 + Math.random() * (seaCanvas.width - enemyWidth - 40);
   let attempts = 0;
 
-  while (isInvalidSpawn(x) && attempts < 20) {
+  while (isInvalidSpawn(x) && attempts < 25) {
     x = 20 + Math.random() * (seaCanvas.width - enemyWidth - 40);
     attempts++;
   }
 
-  // Progressive enemy speed starting slow and manageable
-  const baseSpeed = 1.1 + Math.min(2.0, seaScore * 0.08);
+  // Speed variations based on variant
+  let baseSpeed = 1.1 + Math.min(2.0, seaScore * 0.08);
+  if (variant === 'armored') baseSpeed *= 0.72; // Slower heavy warship
+  if (variant === 'artillery') baseSpeed *= 1.25; // Faster light mortar galley
 
   enemyShips.push({
     x: x,
     y: -enemyHeight,
     width: enemyWidth,
     height: enemyHeight,
-    speed: baseSpeed
+    speed: baseSpeed,
+    variant: variant,
+    hp: hp,
+    maxHp: hp,
+    fireTimer: Math.floor(Math.random() * 60) // Initial delay for artillery firing
   });
 }
 
@@ -784,6 +898,36 @@ function seaGameLoop() {
 
   if (playerShip.invulnerableTimer > 0) {
     playerShip.invulnerableTimer--;
+  }
+
+  if (playerShip.dashCooldownTimer > 0) {
+    playerShip.dashCooldownTimer--;
+  }
+
+  if (playerShip.dashBurstTimer > 0) {
+    playerShip.dashBurstTimer--;
+    // Continuous water foam particles during active dash burst
+    const px = playerShip.x + playerShip.width / 2;
+    const py = playerShip.y + playerShip.height / 2;
+    dashWakes.push({
+      x: px + (Math.random() - 0.5) * 16,
+      y: py + (Math.random() - 0.5) * 16,
+      vx: -playerShip.vx * 0.2 + (Math.random() - 0.5) * 1,
+      vy: -playerShip.vy * 0.2 + (Math.random() - 0.5) * 1,
+      radius: 2.5 + Math.random() * 4,
+      life: 1.0,
+      decay: 0.05
+    });
+  }
+
+  // Update Dash Wake Trail Particles
+  for (let i = dashWakes.length - 1; i >= 0; i--) {
+    const dw = dashWakes[i];
+    dw.x += dw.vx;
+    dw.y += dw.vy;
+    dw.radius += 0.3;
+    dw.life -= dw.decay;
+    if (dw.life <= 0) dashWakes.splice(i, 1);
   }
 
   // 2. Progressive Spawning Timers starting noticeably relaxed early on
@@ -1038,31 +1182,55 @@ function seaGameLoop() {
 
     if (cbHit) continue;
 
-    // Check collision with Enemy Ships (+1 Point)
+    // Check collision with Enemy Ships (Normal: 1 hit, Armored: 3 hits, Artillery: 1 hit)
     for (let eIdx = enemyShips.length - 1; eIdx >= 0; eIdx--) {
       const e = enemyShips[eIdx];
       if (checkPointInAABB(cb.x, cb.y, e)) {
-        const destroyX = e.x + e.width / 2;
-        const destroyY = e.y + e.height / 2;
-
-        createExplosion(destroyX, destroyY);
-        playSeaSFX('enemyDestroyed');
-
-        // Spawn floating "+1" score popup feedback
-        scorePopups.push({
-          x: destroyX,
-          y: destroyY - 8,
-          vy: -1.2,
-          life: 1.0,
-          decay: 0.025,
-          text: '+1'
-        });
-
+        e.hp -= 1;
         cannonballs.splice(i, 1);
-        enemyShips.splice(eIdx, 1);
-        seaScore += 1;
-        updateSeaHUD();
         cbHit = true;
+
+        if (e.hp <= 0) {
+          const destroyX = e.x + e.width / 2;
+          const destroyY = e.y + e.height / 2;
+
+          // Heavier explosion effect for Armored Warships
+          if (e.variant === 'armored') {
+            createExplosion(destroyX, destroyY);
+            createExplosion(destroyX + 10, destroyY - 10);
+            createExplosion(destroyX - 10, destroyY + 10);
+          } else {
+            createExplosion(destroyX, destroyY);
+          }
+
+          // Spawn floating "+1" score popup feedback
+          scorePopups.push({
+            x: destroyX,
+            y: destroyY - 8,
+            vy: -1.2,
+            life: 1.0,
+            decay: 0.025,
+            text: '+1'
+          });
+
+          enemyShips.splice(eIdx, 1);
+          seaScore += 1;
+          updateSeaHUD();
+        } else {
+          // Armored ship hit effect (sparks + armor hit sound)
+          for (let sp = 0; sp < 6; sp++) {
+            rockShatters.push({
+              x: cb.x,
+              y: cb.y,
+              vx: (Math.random() - 0.5) * 3,
+              vy: (Math.random() - 0.5) * 3,
+              radius: 1.5 + Math.random() * 2,
+              life: 0.7,
+              decay: 0.05,
+              color: '#d4af37'
+            });
+          }
+        }
         break;
       }
     }
@@ -1130,10 +1298,35 @@ function seaGameLoop() {
     }
   }
 
-  // 5. Update Enemy Ships & Escaped Ship Penalty
+  // 5. Update Enemy Ships, Artillery Mortar Firing & Escaped Ship Penalty
   for (let i = enemyShips.length - 1; i >= 0; i--) {
     const e = enemyShips[i];
     e.y += e.speed;
+
+    // Artillery Ship Mortar Firing Logic (Fires slow, readable red-hot mortar projectiles at player)
+    if (e.variant === 'artillery') {
+      e.fireTimer = (e.fireTimer || 0) + 1;
+      if (e.fireTimer >= 140 && e.y > 0 && e.y < seaCanvas.height - 100) {
+        e.fireTimer = 0;
+        const ex = e.x + e.width / 2;
+        const ey = e.y + e.height;
+        const px = playerShip.x + playerShip.width / 2;
+        const py = playerShip.y + playerShip.height / 2;
+
+        const dx = px - ex;
+        const dy = py - ey;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const projSpeed = 3.2; // Slow, easily readable and dodgeable mortar ball
+
+        enemyProjectiles.push({
+          x: ex,
+          y: ey,
+          vx: (dx / dist) * projSpeed,
+          vy: (dy / dist) * projSpeed,
+          radius: 4.5
+        });
+      }
+    }
 
     // Check if enemy ship completely leaves the bottom edge of playable sea canvas -> Lose 1 Life
     if (e.y >= seaCanvas.height) {
@@ -1259,6 +1452,32 @@ function seaGameLoop() {
           }
         }
       }
+    }
+  }
+
+  // Update Enemy Mortar Projectiles & Collision with Black Pearl
+  for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
+    const ep = enemyProjectiles[i];
+    ep.x += ep.vx;
+    ep.y += ep.vy;
+
+    // Check collision with Player
+    if (playerShip.invulnerableTimer === 0 && checkPointInAABB(ep.x, ep.y, playerShip)) {
+      seaLives--;
+      updateSeaHUD();
+      playerShip.invulnerableTimer = 60;
+      createExplosion(ep.x, ep.y);
+      enemyProjectiles.splice(i, 1);
+
+      if (seaLives <= 0) {
+        triggerSeaGameOver("Hit by Royal Navy mortar artillery!");
+        return;
+      }
+      continue;
+    }
+
+    if (ep.x < -20 || ep.x > seaCanvas.width + 20 || ep.y < -20 || ep.y > seaCanvas.height + 20) {
+      enemyProjectiles.splice(i, 1);
     }
   }
 
@@ -1693,52 +1912,137 @@ function drawSeaBattleFrame() {
     seaCtx.strokeRect(r.x - 2, r.y + r.height - 2, r.width + 4, 3);
   });
 
-  // 3. Draw Enemy Ships (Royal Navy Warships)
+  // 3. Draw Enemy Ships (Royal Navy Warship Variants: Normal, Armored, Artillery)
   enemyShips.forEach(e => {
-    // Darker Royal Navy Mahogany/Navy Hull
-    seaCtx.fillStyle = '#0f172a';
-    seaCtx.strokeStyle = '#d4af37';
-    seaCtx.lineWidth = 1.5;
+    if (e.variant === 'armored') {
+      // Heavy Armored Warship (Larger, Dark Ironclad Plating, Gold Trim & Double Gunports)
+      seaCtx.fillStyle = '#020617';
+      seaCtx.strokeStyle = '#eab308';
+      seaCtx.lineWidth = 2.0;
 
-    seaCtx.beginPath();
-    seaCtx.moveTo(e.x + e.width / 2, e.y + e.height);
-    seaCtx.lineTo(e.x + e.width, e.y + e.height * 0.3);
-    seaCtx.lineTo(e.x + e.width * 0.8, e.y);
-    seaCtx.lineTo(e.x + e.width * 0.2, e.y);
-    seaCtx.lineTo(e.x, e.y + e.height * 0.3);
-    seaCtx.closePath();
-    seaCtx.fill();
-    seaCtx.stroke();
+      seaCtx.beginPath();
+      seaCtx.moveTo(e.x + e.width / 2, e.y + e.height);
+      seaCtx.lineTo(e.x + e.width, e.y + e.height * 0.25);
+      seaCtx.lineTo(e.x + e.width * 0.82, e.y);
+      seaCtx.lineTo(e.x + e.width * 0.18, e.y);
+      seaCtx.lineTo(e.x, e.y + e.height * 0.25);
+      seaCtx.closePath();
+      seaCtx.fill();
+      seaCtx.stroke();
 
-    // Golden Navy Stripe
-    seaCtx.fillStyle = '#f59e0b';
-    seaCtx.fillRect(e.x + 2, e.y + e.height * 0.55, e.width - 4, 3);
+      // Iron Armor Banding
+      seaCtx.fillStyle = '#475569';
+      seaCtx.fillRect(e.x + 3, e.y + e.height * 0.45, e.width - 6, 4);
+      seaCtx.fillRect(e.x + 3, e.y + e.height * 0.65, e.width - 6, 4);
 
-    // Gunports along Hull Sides
-    seaCtx.fillStyle = '#020617';
-    for (let gp = 0; gp < 3; gp++) {
-      seaCtx.fillRect(e.x + 4 + gp * 10, e.y + e.height * 0.62, 4, 3);
+      // White Sails with Red Royal Emblem Stripe
+      seaCtx.fillStyle = '#f1f5f9';
+      seaCtx.fillRect(e.x + 4, e.y + e.height * 0.18, e.width - 8, e.height * 0.25);
+      seaCtx.fillStyle = '#dc2626';
+      seaCtx.fillRect(e.x + e.width / 2 - 2, e.y + e.height * 0.18, 4, e.height * 0.25);
+
+      // Flag
+      seaCtx.fillStyle = '#ffffff';
+      seaCtx.fillRect(e.x + e.width / 2 + 1, e.y + 2, 11, 7);
+      seaCtx.fillStyle = '#dc2626';
+      seaCtx.fillRect(e.x + e.width / 2 + 5, e.y + 2, 3, 7);
+      seaCtx.fillRect(e.x + e.width / 2 + 1, e.y + 4, 11, 3);
+
+    } else if (e.variant === 'artillery') {
+      // Light Artillery Mortar Galley (Smaller, Dark Blue Hull, Brass Mortar Cannon, Gold Pennant)
+      seaCtx.fillStyle = '#1e293b';
+      seaCtx.strokeStyle = '#38bdf8';
+      seaCtx.lineWidth = 1.5;
+
+      seaCtx.beginPath();
+      seaCtx.moveTo(e.x + e.width / 2, e.y + e.height);
+      seaCtx.lineTo(e.x + e.width, e.y + e.height * 0.3);
+      seaCtx.lineTo(e.x + e.width * 0.75, e.y);
+      seaCtx.lineTo(e.x + e.width * 0.25, e.y);
+      seaCtx.lineTo(e.x, e.y + e.height * 0.3);
+      seaCtx.closePath();
+      seaCtx.fill();
+      seaCtx.stroke();
+
+      // Brass Mortar Cannon at Bow
+      seaCtx.fillStyle = '#d4af37';
+      seaCtx.beginPath();
+      seaCtx.arc(e.x + e.width / 2, e.y + e.height * 0.7, 4.5, 0, Math.PI * 2);
+      seaCtx.fill();
+
+      // Sails
+      seaCtx.fillStyle = '#f8fafc';
+      seaCtx.fillRect(e.x + 3, e.y + e.height * 0.2, e.width - 6, e.height * 0.28);
+
+      // Gold Triangular Pennant
+      seaCtx.fillStyle = '#eab308';
+      seaCtx.beginPath();
+      seaCtx.moveTo(e.x + e.width / 2, e.y + 2);
+      seaCtx.lineTo(e.x + e.width / 2 + 10, e.y + 5);
+      seaCtx.lineTo(e.x + e.width / 2, e.y + 8);
+      seaCtx.closePath();
+      seaCtx.fill();
+
+    } else {
+      // Standard Royal Navy Warship
+      seaCtx.fillStyle = '#0f172a';
+      seaCtx.strokeStyle = '#d4af37';
+      seaCtx.lineWidth = 1.5;
+
+      seaCtx.beginPath();
+      seaCtx.moveTo(e.x + e.width / 2, e.y + e.height);
+      seaCtx.lineTo(e.x + e.width, e.y + e.height * 0.3);
+      seaCtx.lineTo(e.x + e.width * 0.8, e.y);
+      seaCtx.lineTo(e.x + e.width * 0.2, e.y);
+      seaCtx.lineTo(e.x, e.y + e.height * 0.3);
+      seaCtx.closePath();
+      seaCtx.fill();
+      seaCtx.stroke();
+
+      // Golden Navy Stripe
+      seaCtx.fillStyle = '#f59e0b';
+      seaCtx.fillRect(e.x + 2, e.y + e.height * 0.55, e.width - 4, 3);
+
+      // Gunports
+      seaCtx.fillStyle = '#020617';
+      for (let gp = 0; gp < 3; gp++) {
+        seaCtx.fillRect(e.x + 4 + gp * 10, e.y + e.height * 0.62, 4, 3);
+      }
+
+      // White Canvas Sails
+      seaCtx.fillStyle = '#f8fafc';
+      seaCtx.strokeStyle = '#64748b';
+      seaCtx.lineWidth = 1;
+      seaCtx.fillRect(e.x + 3, e.y + e.height * 0.22, e.width - 6, e.height * 0.32);
+      seaCtx.strokeRect(e.x + 3, e.y + e.height * 0.22, e.width - 6, e.height * 0.32);
+
+      // Flag
+      seaCtx.fillStyle = '#ffffff';
+      seaCtx.fillRect(e.x + e.width / 2 + 1, e.y + 2, 10, 6);
+      seaCtx.fillStyle = '#1e3a8a';
+      seaCtx.fillRect(e.x + e.width / 2 + 1, e.y + 2, 4, 3);
+      seaCtx.fillStyle = '#dc2626';
+      seaCtx.fillRect(e.x + e.width / 2 + 5, e.y + 2, 2, 6);
+      seaCtx.fillRect(e.x + e.width / 2 + 1, e.y + 4, 10, 2);
     }
+  });
 
-    // Royal Navy White Canvas Sails
-    seaCtx.fillStyle = '#f8fafc';
-    seaCtx.strokeStyle = '#64748b';
-    seaCtx.lineWidth = 1;
-    seaCtx.fillRect(e.x + 3, e.y + e.height * 0.22, e.width - 6, e.height * 0.32);
-    seaCtx.strokeRect(e.x + 3, e.y + e.height * 0.22, e.width - 6, e.height * 0.32);
+  // Draw Royal Navy Mortar Cannonball Projectiles
+  enemyProjectiles.forEach(ep => {
+    seaCtx.save();
+    seaCtx.fillStyle = '#ef4444';
+    seaCtx.shadowColor = '#f59e0b';
+    seaCtx.shadowBlur = 8;
+    seaCtx.beginPath();
+    seaCtx.arc(ep.x, ep.y, ep.radius, 0, Math.PI * 2);
+    seaCtx.fill();
 
-    // Mast
-    seaCtx.fillStyle = '#b45309';
-    seaCtx.fillRect(e.x + e.width / 2 - 1, e.y + 2, 2, e.height * 0.7);
-
-    // Royal Navy Ensign Flag at Bow/Mast (White flag with red Cross of St George & blue canton)
-    seaCtx.fillStyle = '#ffffff';
-    seaCtx.fillRect(e.x + e.width / 2 + 1, e.y + 2, 10, 6);
-    seaCtx.fillStyle = '#1e3a8a';
-    seaCtx.fillRect(e.x + e.width / 2 + 1, e.y + 2, 4, 3);
-    seaCtx.fillStyle = '#dc2626';
-    seaCtx.fillRect(e.x + e.width / 2 + 5, e.y + 2, 2, 6);
-    seaCtx.fillRect(e.x + e.width / 2 + 1, e.y + 4, 10, 2);
+    // Hot glowing core
+    seaCtx.fillStyle = '#fef08a';
+    seaCtx.beginPath();
+    seaCtx.arc(ep.x - 1, ep.y - 1, ep.radius * 0.4, 0, Math.PI * 2);
+    seaCtx.fill();
+    seaCtx.restore();
   });
 
   // Draw Flipping Enemy Ships (Royal Navy Capsizing Hull Animation)
@@ -1913,6 +2217,17 @@ function drawSeaBattleFrame() {
     seaCtx.lineTo(0, 0);
     seaCtx.lineTo(fg.size * 0.8, -fg.size * 0.4);
     seaCtx.stroke();
+    seaCtx.restore();
+  });
+
+  // Draw Dash Water/Wake Foam Trails
+  dashWakes.forEach(dw => {
+    seaCtx.save();
+    seaCtx.globalAlpha = Math.max(0, dw.life);
+    seaCtx.fillStyle = 'rgba(224, 247, 250, 0.75)';
+    seaCtx.beginPath();
+    seaCtx.ellipse(dw.x, dw.y, dw.radius * 1.4, dw.radius * 0.7, 0, 0, Math.PI * 2);
+    seaCtx.fill();
     seaCtx.restore();
   });
 
