@@ -1089,11 +1089,11 @@ function seaGameLoop() {
     const e = enemyShips[i];
     e.y += e.speed;
 
-    // Check if enemy ship reaches the player's ship level / reaches bottom -> Lose 1 Life
-    if (e.y >= playerShip.y - 10) {
+    // Check if enemy ship completely leaves the bottom edge of playable sea canvas -> Lose 1 Life
+    if (e.y >= seaCanvas.height) {
       seaLives--;
       updateSeaHUD();
-      createExplosion(e.x + e.width / 2, e.y + e.height / 2);
+      createExplosion(e.x + e.width / 2, seaCanvas.height - 10);
       enemyShips.splice(i, 1);
 
       if (seaLives <= 0) {
