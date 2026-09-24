@@ -332,18 +332,19 @@ function initSeaBattle() {
     if (saved) seaHighScore = parseInt(saved, 10) || 0;
   } catch (e) {}
 
-  // Keyboard Event Listeners
+  // Keyboard Event Listeners (Arrow Keys & WASD Support)
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft') {
+    const k = e.key.toLowerCase();
+    if (e.key === 'ArrowLeft' || k === 'a') {
       keyState.left = true;
       if (seaGameActive) e.preventDefault();
-    } else if (e.key === 'ArrowRight') {
+    } else if (e.key === 'ArrowRight' || k === 'd') {
       keyState.right = true;
       if (seaGameActive) e.preventDefault();
-    } else if (e.key === 'ArrowUp') {
+    } else if (e.key === 'ArrowUp' || k === 'w') {
       keyState.up = true;
       if (seaGameActive) e.preventDefault();
-    } else if (e.key === 'ArrowDown') {
+    } else if (e.key === 'ArrowDown' || k === 's') {
       keyState.down = true;
       if (seaGameActive) e.preventDefault();
     } else if (e.key === ' ' || e.key === 'Spacebar') {
@@ -353,10 +354,11 @@ function initSeaBattle() {
   });
 
   window.addEventListener('keyup', (e) => {
-    if (e.key === 'ArrowLeft') keyState.left = false;
-    else if (e.key === 'ArrowRight') keyState.right = false;
-    else if (e.key === 'ArrowUp') keyState.up = false;
-    else if (e.key === 'ArrowDown') keyState.down = false;
+    const k = e.key.toLowerCase();
+    if (e.key === 'ArrowLeft' || k === 'a') keyState.left = false;
+    else if (e.key === 'ArrowRight' || k === 'd') keyState.right = false;
+    else if (e.key === 'ArrowUp' || k === 'w') keyState.up = false;
+    else if (e.key === 'ArrowDown' || k === 's') keyState.down = false;
     else if (e.key === ' ' || e.key === 'Spacebar') keyState.space = false;
   });
 
