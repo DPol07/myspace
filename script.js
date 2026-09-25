@@ -294,6 +294,7 @@ let barrels = [];
 let islands = [];
 let seagulls = [];
 let fallingSeagulls = [];
+let jarsOfDirt = [];
 let splashEffects = [];
 let explosions = [];
 let rockShatters = [];
@@ -404,6 +405,7 @@ function startSeaBattle() {
   islands = [];
   seagulls = [];
   fallingSeagulls = [];
+  jarsOfDirt = [];
   splashEffects = [];
   explosions = [];
   rockShatters = [];
@@ -766,13 +768,44 @@ function spawnSmallIsland() {
 
 function spawnSeagull() {
   const fromLeft = Math.random() < 0.5;
+  // Rare Jar of Dirt Seagull event: eligible only when seaScore >= 3 (~6% chance)
+  const isJarSeagull = (seaScore >= 3 && Math.random() < 0.06);
+
   seagulls.push({
     x: fromLeft ? -30 : seaCanvas.width + 30,
-    y: 30 + Math.random() * (seaCanvas.height * 0.6),
+    y: 30 + Math.random() * (seaCanvas.height * 0.5),
     vx: fromLeft ? (1.4 + Math.random() * 1.2) : (-1.4 - Math.random() * 1.2),
     vy: (Math.random() - 0.5) * 0.4,
-    size: 15 + Math.random() * 7
+    size: 15 + Math.random() * 7,
+    hasJar: isJarSeagull
   });
+}
+
+function drawJarOfDirtGraphics(x, y, w, h) {
+  seaCtx.save();
+  // Dirt inside lower jar
+  seaCtx.fillStyle = '#5d4037';
+  seaCtx.fillRect(x + 2, y + h * 0.38, w - 4, h * 0.58);
+
+  // Glass Jar Container
+  seaCtx.strokeStyle = 'rgba(224, 247, 250, 0.9)';
+  seaCtx.lineWidth = 1.5;
+  seaCtx.fillStyle = 'rgba(180, 235, 255, 0.25)';
+  seaCtx.beginPath();
+  seaCtx.rect(x, y + 3, w, h - 3);
+  seaCtx.fill();
+  seaCtx.stroke();
+
+  // Cork Stopper
+  seaCtx.fillStyle = '#8d6e63';
+  seaCtx.fillRect(x + w * 0.2, y, w * 0.6, 4);
+
+  // Luminous Heart Symbol inside Jar
+  seaCtx.fillStyle = '#f43f5e';
+  seaCtx.font = '10px sans-serif';
+  seaCtx.textAlign = 'center';
+  seaCtx.fillText('❤️', x + w / 2, y + h * 0.72);
+  seaCtx.restore();
 }
 
 function createExplosion(x, y) {
@@ -1169,41 +1202,72 @@ function seaGameLoop() {
 
     if (cbHit) continue;
 
-    // Check collision with Seagulls (Knock seagull out of the sky)
+    // Check collision with Seagulls
     for (let gIdx = seagulls.length - 1; gIdx >= 0; gIdx--) {
       const g = seagulls[gIdx];
-      const gBox = { x: g.x - g.size, y: g.y - g.size, width: g.size * 2, height: g.size * 2 };
+      const gBox = { x: g.x - g.size, y: g.y - g.size, width: g.size * 2, height: g.size * 2 + (g.hasJar ? 18 : 0) };
       if (checkPointInAABB(cb.x, cb.y, gBox)) {
         playSeaSFX('seagullCry');
-        // Convert seagull to falling seagull
-        fallingSeagulls.push({
-          x: g.x,
-          y: g.y,
-          vx: g.vx * 0.4,
-          vy: -1.5, // Initial small upward pop from impact
-          gravity: 0.22,
-          rotation: 0,
-          vRot: (Math.random() < 0.5 ? 1 : -1) * (0.15 + Math.random() * 0.1),
-          size: g.size,
-          waterTargetY: g.y + 40 + Math.random() * 60 // Water splash level relative to fall
-        });
 
-        // Small puff of feathers / sparks on impact
-        for (let fp = 0; fp < 5; fp++) {
-          rockShatters.push({
+        if (g.hasJar) {
+          // 1st Hit on Jar Seagull: Drop Jar of Dirt into water; seagull flies on
+          g.hasJar = false;
+          jarsOfDirt.push({
+            x: g.x - 8,
+            y: g.y + 6,
+            width: 16,
+            height: 22,
+            vy: -1.0,
+            gravity: 0.16,
+            waterY: g.y + 45 + Math.random() * 35,
+            inWater: false,
+            speed: 1.2 + Math.random() * 0.3,
+            bobPhase: Math.random() * Math.PI * 2
+          });
+
+          for (let fp = 0; fp < 6; fp++) {
+            rockShatters.push({
+              x: g.x,
+              y: g.y + 10,
+              vx: (Math.random() - 0.5) * 3,
+              vy: (Math.random() - 0.5) * 3,
+              radius: 1.5 + Math.random() * 2,
+              life: 0.8,
+              decay: 0.04,
+              color: Math.random() < 0.5 ? '#d4af37' : '#5d4037'
+            });
+          }
+        } else {
+          // Normal seagull hit or 2nd hit: Convert seagull to falling seagull
+          fallingSeagulls.push({
             x: g.x,
             y: g.y,
-            vx: (Math.random() - 0.5) * 2,
-            vy: (Math.random() - 0.5) * 2,
-            radius: 1.2 + Math.random() * 1.5,
-            life: 0.8,
-            decay: 0.05,
-            color: '#ffffff'
+            vx: g.vx * 0.4,
+            vy: -1.5,
+            gravity: 0.22,
+            rotation: 0,
+            vRot: (Math.random() < 0.5 ? 1 : -1) * (0.15 + Math.random() * 0.1),
+            size: g.size,
+            waterTargetY: g.y + 40 + Math.random() * 60
           });
+
+          for (let fp = 0; fp < 5; fp++) {
+            rockShatters.push({
+              x: g.x,
+              y: g.y,
+              vx: (Math.random() - 0.5) * 2,
+              vy: (Math.random() - 0.5) * 2,
+              radius: 1.2 + Math.random() * 1.5,
+              life: 0.8,
+              decay: 0.05,
+              color: '#ffffff'
+            });
+          }
+
+          seagulls.splice(gIdx, 1);
         }
 
         cannonballs.splice(i, 1);
-        seagulls.splice(gIdx, 1);
         cbHit = true;
         break;
       }
@@ -1525,6 +1589,62 @@ function seaGameLoop() {
     if (fs.life <= 0) {
       createWaterSplashEffect(fs.x, fs.y);
       flippingShips.splice(i, 1);
+    }
+  }
+
+  // Update Floating Jars of Dirt
+  for (let i = jarsOfDirt.length - 1; i >= 0; i--) {
+    const jar = jarsOfDirt[i];
+    if (!jar.inWater) {
+      jar.vy += jar.gravity;
+      jar.y += jar.vy;
+      if (jar.y >= jar.waterY || jar.y >= seaCanvas.height - 100) {
+        jar.inWater = true;
+        createWaterSplashEffect(jar.x + jar.width / 2, jar.y);
+      }
+    } else {
+      // Bob and drift through the water naturally like floating environmental objects
+      jar.bobPhase += 0.08;
+      jar.y += jar.speed;
+      jar.x += Math.sin(jar.bobPhase) * 0.6;
+    }
+
+    // Check Player Ship Collision (Collect Jar of Dirt -> Restores 1 lost life)
+    if (checkAABBCollision(playerShip, jar)) {
+      if (seaLives < 3) {
+        seaLives = Math.min(3, seaLives + 1);
+        updateSeaHUD();
+      }
+
+      for (let sp = 0; sp < 12; sp++) {
+        rockShatters.push({
+          x: jar.x + jar.width / 2,
+          y: jar.y + jar.height / 2,
+          vx: (Math.random() - 0.5) * 4,
+          vy: (Math.random() - 0.5) * 4,
+          radius: 1.8 + Math.random() * 2.5,
+          life: 1.0,
+          decay: 0.03,
+          color: Math.random() < 0.5 ? '#f43f5e' : '#fbbf24'
+        });
+      }
+
+      scorePopups.push({
+        x: jar.x + jar.width / 2,
+        y: jar.y - 12,
+        vy: -1.0,
+        life: 1.2,
+        decay: 0.02,
+        text: '❤️ +1 LIFE',
+        color: '#f43f5e'
+      });
+
+      jarsOfDirt.splice(i, 1);
+      continue;
+    }
+
+    if (jar.y > seaCanvas.height + 40) {
+      jarsOfDirt.splice(i, 1);
     }
   }
 
@@ -2235,6 +2355,15 @@ function drawSeaBattleFrame() {
     seaCtx.quadraticCurveTo(g.x - g.size / 2, g.y - g.size / 2, g.x, g.y);
     seaCtx.quadraticCurveTo(g.x + g.size / 2, g.y - g.size / 2, g.x + g.size, g.y + wingFlap);
     seaCtx.stroke();
+
+    if (g.hasJar) {
+      drawJarOfDirtGraphics(g.x - 7, g.y + 4, 14, 18);
+    }
+  });
+
+  // Draw Floating Jars of Dirt in water
+  jarsOfDirt.forEach(jar => {
+    drawJarOfDirtGraphics(jar.x, jar.y, jar.width, jar.height);
   });
 
   // 9. Draw Falling Seagulls
