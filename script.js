@@ -526,7 +526,7 @@ function fireCannonball() {
  */
 function spawnScatteredRock() {
   // Fair, progressive speed scaling starting slow (1.2px/frame)
-  const baseSpeed = 1.2 + Math.min(2.0, seaScore * 0.08);
+  const baseSpeed = 1.2 + Math.min(2.0, seaScore * 0.02);
   const rockW = 26 + Math.random() * 24;
   const rockH = 24 + Math.random() * 22;
 
@@ -627,12 +627,12 @@ function createWaterSplashEffect(x, y) {
  * that are NOT blocked by islands or completely obscured in line-of-sight by rocks.
  */
 function spawnEnemyShip() {
-  // Determine ship variant: normal (standard), armored (3 hits, slower, larger), artillery (fires mortar shots, faster, smaller)
+  // Determine ship variant: normal (standard), armored (3 hits, slower, larger), artillery (fires mortar shots, same speed, smaller)
   let variant = 'normal';
   const rand = Math.random();
-  if (seaScore >= 3 && rand < 0.28) {
+  if (seaScore >= 3 && rand < 0.10) {
     variant = 'armored';
-  } else if (seaScore >= 2 && rand < 0.52) {
+  } else if (seaScore >= 2 && rand < 0.20) {
     variant = 'artillery';
   }
 
@@ -651,9 +651,9 @@ function spawnEnemyShip() {
   }
 
   // Speed variations based on variant (declared before reaches-bottom solver check)
-  let baseSpeed = 1.1 + Math.min(2.0, seaScore * 0.08);
+  let baseSpeed = 1.1 + Math.min(2.0, seaScore * 0.02);
   if (variant === 'armored') baseSpeed *= 0.72; // Slower heavy warship
-  if (variant === 'artillery') baseSpeed *= 1.25; // Faster light mortar galley
+  if (variant === 'artillery') baseSpeed *= 1.0; // Same speed as regular Royal Navy ships
 
   // Find all rocks and islands currently on screen
   const blockingRocks = rocks.filter(r => r.y >= -20 && r.y < playerShip.y - 30);
@@ -931,8 +931,8 @@ function seaGameLoop() {
   }
 
   // 2. Progressive Spawning Timers starting noticeably relaxed early on
-  const rockSpawnInterval = Math.max(50, 110 - Math.floor(seaScore * 4.5));
-  const enemySpawnInterval = Math.max(80, 150 - Math.floor(seaScore * 6.0));
+  const rockSpawnInterval = Math.max(60, 120 - Math.floor(seaScore * 1.2));
+  const enemySpawnInterval = Math.max(90, 160 - Math.floor(seaScore * 1.5));
 
   spawnTimerRocks++;
   if (spawnTimerRocks >= rockSpawnInterval) {
@@ -1193,6 +1193,7 @@ function seaGameLoop() {
         if (e.hp <= 0) {
           const destroyX = e.x + e.width / 2;
           const destroyY = e.y + e.height / 2;
+          const pointsAwarded = (e.variant === 'armored') ? 2 : 1;
 
           // Heavier explosion effect for Armored Warships
           if (e.variant === 'armored') {
@@ -1203,18 +1204,18 @@ function seaGameLoop() {
             createExplosion(destroyX, destroyY);
           }
 
-          // Spawn floating "+1" score popup feedback
+          // Spawn floating score popup feedback
           scorePopups.push({
             x: destroyX,
             y: destroyY - 8,
             vy: -1.2,
             life: 1.0,
             decay: 0.025,
-            text: '+1'
+            text: '+' + pointsAwarded
           });
 
           enemyShips.splice(eIdx, 1);
-          seaScore += 1;
+          seaScore += pointsAwarded;
           updateSeaHUD();
         } else {
           // Armored ship hit effect (sparks + armor hit sound)
@@ -1420,18 +1421,20 @@ function seaGameLoop() {
           });
         }
 
-        // Floating +1 Score Feedback
+        const pointsAwarded = (e.variant === 'armored') ? 2 : 1;
+
+        // Floating Score Feedback
         scorePopups.push({
           x: e.x + e.width / 2,
           y: e.y - 10,
           vy: -1.2,
           life: 1.0,
           decay: 0.025,
-          text: '+1'
+          text: '+' + pointsAwarded
         });
 
-        // Award +1 Score
-        seaScore += 1;
+        // Award Score
+        seaScore += pointsAwarded;
         updateSeaHUD();
 
         // Remove enemy ship without taking damage
