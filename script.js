@@ -299,6 +299,7 @@ let explosions = [];
 let rockShatters = [];
 let scorePopups = [];
 let dashWakes = [];
+let dashRechargeTimers = [];
 
 // Animated Wave / Sea Mesh State
 let oceanTime = 0;
@@ -408,6 +409,7 @@ function startSeaBattle() {
   rockShatters = [];
   scorePopups = [];
   dashWakes = [];
+  dashRechargeTimers = [];
 
   spawnTimerRocks = 0;
   spawnTimerEnemies = 0;
@@ -445,11 +447,21 @@ function updateSeaHUD() {
     livesSpan.innerText = hearts.trim();
   }
   if (dashSpan) {
-    let dashes = '';
+    let dashes = [];
     for (let i = 0; i < playerShip.maxDashCharges; i++) {
-      dashes += (i < playerShip.dashCharges) ? '💨 ' : '⚪ ';
+      if (i < playerShip.dashCharges) {
+        dashes.push('💨');
+      } else {
+        const rechargeIdx = i - playerShip.dashCharges;
+        if (rechargeIdx === 0 && dashRechargeTimers.length > 0) {
+          const secs = Math.max(1, Math.ceil(dashRechargeTimers[0] / 60));
+          dashes.push(`⏳${secs}s`);
+        } else {
+          dashes.push('⚪');
+        }
+      }
     }
-    dashSpan.innerText = dashes.trim();
+    dashSpan.innerText = dashes.join(' ');
   }
 }
 
@@ -480,9 +492,12 @@ function triggerPlayerDash() {
   dirX /= len;
   dirY /= len;
 
-  const dashForce = 22.0;
+  const dashForce = 26.0;
   playerShip.vx = dirX * dashForce;
   playerShip.vy = dirY * dashForce;
+
+  // Queue a 15-second (900 frames at 60fps) recharge timer for this charge
+  dashRechargeTimers.push(900);
 
   // Spawn initial water wake burst trail behind the Black Pearl
   const px = playerShip.x + playerShip.width / 2;
@@ -929,6 +944,17 @@ function seaGameLoop() {
     dw.life -= dw.decay;
     if (dw.life <= 0) dashWakes.splice(i, 1);
   }
+
+  // Update Dash Recharges (15s per charge)
+  if (dashRechargeTimers.length > 0) {
+    dashRechargeTimers[0]--;
+    if (dashRechargeTimers[0] <= 0) {
+      dashRechargeTimers.shift();
+      playerShip.dashCharges = Math.min(playerShip.maxDashCharges, playerShip.dashCharges + 1);
+    }
+  }
+
+  updateSeaHUD();
 
   // 2. Progressive Spawning Timers starting noticeably relaxed early on
   const rockSpawnInterval = Math.max(60, 120 - Math.floor(seaScore * 1.2));
