@@ -448,13 +448,14 @@ function updateSeaHUD() {
   }
   if (dashSpan) {
     let dashes = [];
+    const sortedTimers = [...dashRechargeTimers].sort((a, b) => a - b);
     for (let i = 0; i < playerShip.maxDashCharges; i++) {
       if (i < playerShip.dashCharges) {
         dashes.push('💨');
       } else {
-        const rechargeIdx = i - playerShip.dashCharges;
-        if (rechargeIdx === 0 && dashRechargeTimers.length > 0) {
-          const secs = Math.max(1, Math.ceil(dashRechargeTimers[0] / 60));
+        const timerIdx = i - playerShip.dashCharges;
+        if (timerIdx < sortedTimers.length) {
+          const secs = Math.max(1, Math.ceil(sortedTimers[timerIdx] / 60));
           dashes.push(`⏳${secs}s`);
         } else {
           dashes.push('⚪');
@@ -945,12 +946,14 @@ function seaGameLoop() {
     if (dw.life <= 0) dashWakes.splice(i, 1);
   }
 
-  // Update Dash Recharges (15s per charge)
+  // Update Dash Recharges (15s per charge concurrently)
   if (dashRechargeTimers.length > 0) {
-    dashRechargeTimers[0]--;
-    if (dashRechargeTimers[0] <= 0) {
-      dashRechargeTimers.shift();
-      playerShip.dashCharges = Math.min(playerShip.maxDashCharges, playerShip.dashCharges + 1);
+    for (let i = dashRechargeTimers.length - 1; i >= 0; i--) {
+      dashRechargeTimers[i]--;
+      if (dashRechargeTimers[i] <= 0) {
+        dashRechargeTimers.splice(i, 1);
+        playerShip.dashCharges = Math.min(playerShip.maxDashCharges, playerShip.dashCharges + 1);
+      }
     }
   }
 
