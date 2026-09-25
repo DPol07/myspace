@@ -235,6 +235,7 @@ function playSeaSFX(type) {
         filter.connect(noiseGain);
         noiseGain.connect(audioCtx.destination);
         noise.start(now);
+        noise.stop(now + 0.10);
         break;
       }
 
@@ -343,6 +344,9 @@ function initSeaBattle() {
 
   // Keyboard Event Listeners (Arrow Keys, WASD, Shift & Spacebar Support)
   window.addEventListener('keydown', (e) => {
+    if (seaGameActive) {
+      initAudioContext();
+    }
     const k = e.key.toLowerCase();
     if (e.key === 'ArrowLeft' || k === 'a') {
       keyState.left = true;
@@ -383,6 +387,7 @@ function initSeaBattle() {
 }
 
 function startSeaBattle() {
+  initAudioContext();
   seaGameActive = true;
   seaScore = 0;
   seaLives = 3;
@@ -495,7 +500,7 @@ function triggerPlayerDash() {
   dirX /= len;
   dirY /= len;
 
-  const dashForce = 26.0;
+  const dashForce = 48.0;
   playerShip.vx = dirX * dashForce;
   playerShip.vy = dirY * dashForce;
 
@@ -912,11 +917,12 @@ function seaGameLoop() {
     playerShip.vy *= 0.88;
   }
 
-  // Clamp velocity to max responsive speed
-  if (playerShip.vx > playerShip.maxSpeed) playerShip.vx = playerShip.maxSpeed;
-  if (playerShip.vx < -playerShip.maxSpeed) playerShip.vx = -playerShip.maxSpeed;
-  if (playerShip.vy > playerShip.maxSpeed) playerShip.vy = playerShip.maxSpeed;
-  if (playerShip.vy < -playerShip.maxSpeed) playerShip.vy = -playerShip.maxSpeed;
+  // Clamp velocity to max responsive speed (or higher limit during dash burst)
+  const currentMaxSpeed = playerShip.dashBurstTimer > 0 ? 50.0 : playerShip.maxSpeed;
+  if (playerShip.vx > currentMaxSpeed) playerShip.vx = currentMaxSpeed;
+  if (playerShip.vx < -currentMaxSpeed) playerShip.vx = -currentMaxSpeed;
+  if (playerShip.vy > currentMaxSpeed) playerShip.vy = currentMaxSpeed;
+  if (playerShip.vy < -currentMaxSpeed) playerShip.vy = -currentMaxSpeed;
 
   if (Math.abs(playerShip.vx) < 0.05) playerShip.vx = 0;
   if (Math.abs(playerShip.vy) < 0.05) playerShip.vy = 0;
